@@ -72,13 +72,8 @@ def main():
     p_chars.add_argument("chars", nargs='+', help="List of characters to inspect")
 
     # info-code: multiple codes
-    p_code = subparsers.add_parser("info-code", help="Inspect font and/or ASCII codes")
-    p_code.add_argument("--font", dest="font_codes", nargs='+',
-                        help="Font-table codes (hex, e.g. 0x0100)")
-    p_code.add_argument("--ascii", dest="ascii_codes", nargs='+',
-                        help="ASCII codes (hex, e.g. 0x20)")
-    
-    p_dup = subparsers.add_parser("find-duplicates", help="Find duplicate characters in font-table")
+    p_code = subparsers.add_parser("info-code", help="Inspect font 2/1 byte codes")
+    p_code.add_argument("codes", nargs='+', help="List of font codes to inspect (0x0000 or 0x00)")
     
     args = parser.parse_args()
     fm = FontMapper(args.ascii_table, args.font_table)
@@ -117,9 +112,10 @@ def main():
             show_info_for_char(c)
 
     elif args.command == "info-code":
-        # Process font codes
-        if args.font_codes:
-            for code_str in args.font_codes:
+        chars = ""
+        for code_str in args.codes:
+            
+            if len(code_str) == 4:
                 try:
                     fc = int(code_str, 16)
                 except ValueError:
@@ -130,11 +126,12 @@ def main():
                 if ch is None:
                     print("  No character at this font code")
                     print()
+                    chars += " "
                 else:
+                    chars += ch
                     show_info_for_char(ch)
-        # Process ASCII codes
-        if args.ascii_codes:
-            for code_str in args.ascii_codes:
+            
+            if len(code_str) == 2:
                 try:
                     ac = int(code_str, 16)
                 except ValueError:
@@ -145,28 +142,13 @@ def main():
                 if ch is None:
                     print("  No character at this ASCII code")
                     print()
+                    chars += " "
                 else:
+                    chars += ch
                     show_info_for_char(ch)
-        
-    elif args.command == "find-duplicates":
-        char_to_codes = defaultdict(list)
-        for code, char in fm.font_table.items():
-            char_to_codes[char].append(code)
-
-        duplicates = {ch: codes for ch, codes in char_to_codes.items() if len(codes) > 1}
-
-        if not duplicates:
-            print("No duplicates found in font-table.")
-        else:
-            print("Duplicate characters in font-table:")
-            for ch, codes in duplicates.items():
-                print(f"Character '{ch}' appears at:")
-                for code in codes:
-                    idx = list(fm.font_table.keys()).index(code)
-                    table, row, col = calc_position(idx)
-                    print(f"  Code 0x{code:03X} (table {table}, row {row}, col {col})")
-                print()
-            print("Duplicates:", len(duplicates))
+                
+        if len(chars) > 1:
+            print(f"[+] Characters string: \"{chars}\"")
                 
 if __name__ == "__main__":
     main()

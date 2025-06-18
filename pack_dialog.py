@@ -29,6 +29,11 @@ def pack_dialog_text(text, font_map: FontMapper):
             if token.startswith('RAW:'):
                 enters = token.split(":")[1]
                 output.extend(bytes.fromhex(enters))
+            elif token.startswith('SP:'):
+                # repeat space byte 0x20 count times
+                count = int(token.split(':', 1)[1])
+                for _ in range(count):
+                    emit_byte(0x20)
             elif token == 'END':
                 emit_byte(0x00)
                 #break
@@ -175,8 +180,16 @@ def main():
     parser = argparse.ArgumentParser(description="Pack JSON dialog into binary format")
     parser.add_argument("infile", help="Input JSON file with dialog structure")
     parser.add_argument("outfile", help="Output binary dialog file")
-    parser.add_argument("font_table", help="Path to font-table.txt", default="./font/ascii-table.bin")
-    parser.add_argument("ascii_table", help="Path to ascii-table.bin", default="./font/font-table.txt")
+    parser.add_argument(
+        "--font_table",
+        default="./font/ascii-table.bin",
+        help="Path to font-table.txt"
+    )
+    parser.add_argument(
+        "--ascii_table",
+        default="./font/font-table.txt",
+        help="Path to ascii-table.bin"
+    )
     args = parser.parse_args()
 
     # Load JSON
