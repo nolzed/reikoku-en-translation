@@ -37,28 +37,28 @@ def pack_dialog_text(text, font_map: FontMapper):
             elif token == 'END':
                 emit_byte(0x00)
                 #break
-            elif token == 'WAIT':
+            elif token == 'WAIT_1':
                 emit_byte(0x0B)
-            elif token.startswith('FUNC:'):
+            elif token.startswith('FUNC_ID:'):
                 func_id = int(token.split(':',1)[1])
                 emit_byte(0x0C)
                 emit_byte(func_id)
             elif token == '':
                 continue
-            elif token == 'SCROLL':
+            elif token == 'INDENT':
                 emit_byte(0x0E)
             elif token.startswith('DELAY:'):
                 delay = int(token.split(':',1)[1])
                 emit_byte(0x0F)
                 emit_byte(0x00)
                 emit_byte(delay)
-            elif token == 'WAIT_PRESS':
+            elif token == 'WAIT_2':
                 emit_byte(0x0F)
                 emit_byte(0x01)
             elif token == 'CLEAR':
                 emit_byte(0x0F)
                 emit_byte(0x02)
-            elif token.startswith('FUNC_CALL:'):
+            elif token.startswith('FUNC_ADR:'):
                 addr_str = token.split(':',1)[1]
                 addr = int(addr_str, 16)
                 lo = addr & 0xFF

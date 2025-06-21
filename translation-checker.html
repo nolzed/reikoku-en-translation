@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reikoku Translation Checker</title>
+  <style>
+    body { display: flex; flex-direction: column; font-family: monospace; margin: 0; padding: 0; height: 100vh; }
+    .container { display: flex; flex: 1; overflow: hidden; }
+    .pane { display: flex; flex-direction: column; padding: 10px; box-sizing: border-box; overflow: hidden; background-color: #f6fbff;}
+    textarea { flex: 1; resize: none; font-family: monospace; }
+    .controls { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px; }
+    .controls label { display: flex; flex-direction: column; font-size: 0.9rem; }
+    .outputs { display: flex; gap: 10px; flex: 1; overflow: auto; }
+    .output { flex: 1; border: 1px solid #333; padding: 5px; box-sizing: border-box; overflow: auto; background-color: #f7f7f7;}
+    .stats-container { display: flex; gap: 10px; margin-top: 10px; }
+    .stats { font-size: 0.85rem; color: #555; padding: 4px; border: 1px solid #aaa; border-radius: 4px; flex: 1; background-color: #ffffff;}
+    .stats div { margin-bottom: 4px; }
+    .window-wrapper { margin-bottom: 8px; }
+    .sentence-label { font-size: 0.75rem; color: #333; margin-bottom: 2px; }
+    .window { border: 1px solid #666; overflow: hidden; width: fit-content; min-width: max-content; background-color: #ffffff;} 
+    .frame { padding: 4px; box-sizing: border-box; width: fit-content; }
+    .char { display: inline-block; text-align: center; box-sizing: border-box; line-height: 1; vertical-align: top; }
+    .divider {
+      width: 5px;
+      background: #ccc;
+      cursor: ew-resize;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .divider::before {
+      content: '⋮';
+      font-size: 26px;
+      color: #888;
+      writing-mode: vertical-lr;
+      transform: rotate(90deg);
+      pointer-events: none;
+      margin-bottom: 45px;
+    }
+    .sentence-num {
+        font-size: 0.75rem;
+        padding-bottom: 2px;
+        user-select: none;
+        width: fit-content;
+    }
+    .sentence-num:not(:first-child) {
+      margin-top: 8px;
+    }
+    .sentence-num:hover {
+        color: rgb(121, 121, 252);
+        font-weight: bold;
+    }
+
+    .sentence-num.highlight {
+      color: rgb(121, 121, 252);
+      font-weight: bold; 
+    }
+
+.char {
+  display: inline-flex;       
+  justify-content: center;   
+  align-items: center;        
+  width: 16px;                
+  height: 20px;              
+  font-size: 14px;           
+  line-height: 1;             
+  font-family: monospace;
+}
+
+.frame div {
+    display: flex;
+}
+
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="leftPane" class="pane" style="flex: 1;">
+      <h3>Original Script</h3>
+      <textarea id="inputScript" placeholder="Enter original script..."></textarea>
+      <h3>Translation</h3>
+      <textarea id="translatedScript" placeholder="Enter translated script..."></textarea>
+      <div class="controls">
+        <label>Preset Size:
+          <select id="presetSize">
+            <option value="19x3">19×3 (Dialogue)</option>
+            <option value="19x12">19×12 (High Dialogue)</option>
+            <option value="19x10">19×10 (Database)</option>
+            <option value="custom">Custom</option>
+          </select>
+        </label>
+        <label>Width (chars):<input type="number" id="widthChars" value="19" min="1"></label>
+        <label>Height (lines):<input type="number" id="heightLines" value="3" min="1"></label>
+        <label>Font Size (px):<input type="number" id="charFont" value="16" min="1"></label>
+        <label>Char Width (px):<input type="number" id="charWidth" value="18" min="1"></label>
+        <label>Char Height (px):<input type="number" id="charHeight" value="20" min="1"></label>
+      </div>
+    </div>
+    <div id="divider" class="divider"></div>
+    <div id="rightPane" class="pane" style="flex: 1;">
+      <h3>Output Preview</h3>
+      <div class="outputs">
+        <div class="output" id="outputOriginal"></div>
+        <div class="output" id="outputTranslated"></div>
+      </div>
+      <div class="stats-container" id="statsContainer"></div>
+    </div>
+  </div>
+
+  <script>
+    const divider = document.getElementById('divider');
+    const leftPane = document.getElementById('leftPane');
+    const rightPane = document.getElementById('rightPane');
+    let isDragging = false;
+
+    divider.addEventListener('mousedown', e => { isDragging = true; document.body.style.cursor = 'ew-resize'; });
+    document.addEventListener('mousemove', e => {
+      if (!isDragging) return;
+      const rect = document.querySelector('.container').getBoundingClientRect();
+      let x = e.clientX - rect.left;
+      const min = 100, max = rect.width - min;
+      x = Math.min(Math.max(x, min), max);
+      leftPane.style.flex = `0 0 ${x}px`;
+    });
+    document.addEventListener('mouseup', () => { if (isDragging) { isDragging = false; document.body.style.cursor = ''; } });
+
+    function countCommands(text, cmd) {
+      const regex = cmd.includes(':')
+        ? new RegExp(`\\[${cmd.replace(':', ':.*?')}\\]`, 'g')   // commands with params
+        : new RegExp(`\\[${cmd}\\]`, 'g');                       // regular commands
+      return (text.match(regex) || []).length;
+    }
+
+    function parseScript(text) {
+  let tokens = [], i = 0;
+  let lastWasNewline = false;
+
+  while (i < text.length) {
+    if (text[i] === '[') {
+      const m = text.slice(i).match(/^\[([A-Z_0-9:]+)\]/);
+      if (m) {
+        const name = m[1], full = m[0];
+        if (name.startsWith('SP:')) tokens.push(' '.repeat(+name.split(':')[1]));
+        else if (/^(FUNC_ID|DELAY|WAIT_2|FUNC_ADR)/.test(name)) { }
+        else if (name === 'WAIT_1') {
+          if (!lastWasNewline) {
+            tokens.push('\n');
+            lastWasNewline = true;
+          }
+        }
+        else if (name === 'CLEAR') tokens.push('{CLEAR}');
+        else if (name === 'INTEND') tokens.push('{INTEND}');
+        else if (name === 'END') tokens.push('{END}');
+        i += full.length;
+        continue;
+      }
+    }
+
+    if (text[i] === '\\' && text[i + 1] === 'n') {
+      if (!lastWasNewline) {
+        tokens.push('\n');
+        lastWasNewline = true;
+      }
+      i += 2;
+    } else {
+      if (text[i] !== '\n' && text[i] !== '\r') lastWasNewline = false;
+      tokens.push(text[i]);
+      i++;
+    }
+  }
+
+  return tokens.join('');
+}
+
+    function buildWindows(parsed, width, height) {
+  const segments = [];
+  let buffer = '';
+  for (let i = 0; i < parsed.length;) {
+    if (parsed.startsWith('{CLEAR}', i) || parsed.startsWith('{END}', i)) {
+      segments.push(buffer);
+      buffer = '';
+      i += parsed.startsWith('{CLEAR}', i) ? 7 : 5;
+    } else buffer += parsed[i++];
+  }
+  if (buffer) segments.push(buffer);
+
+  const windows = [];
+  segments.forEach(text => {
+    const lines = ['']; 
+    let indent = 0;
+    for (let i = 0; i < text.length;) {
+      if (text[i] === '\n') {
+        if (lines.length === 1 && lines[0].length === 0) {
+          // skip the first line break to avoid creating a blank line at the top
+          i++;
+          continue;
+        }
+        lines.push(''.padEnd(indent));
+        i++;
+        continue;
+      }
+      if (text.startsWith('{INTEND}', i)) { 
+        indent = lines[lines.length - 1].length; 
+        i += 8; 
+        continue; 
+      }
+      const ch = text[i++];
+      let line = lines[lines.length - 1];
+      if (line.length >= width) lines.push(''.padEnd(indent) + ch);
+      else lines[lines.length - 1] += ch;
+    }
+    for (let s = 0; s < lines.length; s += height) {
+      let win = lines.slice(s, s + height);
+      while (win.length < height) win.push('');
+      win = win.map(l => l.padEnd(width, ' '));
+      if (win.some(line => line.trim().length > 0)) windows.push(win);
+    }
+  });
+  return windows;
+}
+
+
+    function analyze(raw, parsed, windows, width, height) {
+      const totalParsedChars = parsed.replace(/\{.*?\}/g, '').length;
+      const occupancy = windows.reduce((sum, w) => sum + w.join('').trim().length, 0);
+      const capacity = windows.length * width * height;
+      return {
+        windowCount: windows.length,
+        commandsEnd: countCommands(raw, 'END'),
+        commandsClear: countCommands(raw, 'CLEAR'),
+        commandsSpace: countCommands(raw, 'SP:'),
+        commandsIndent: countCommands(raw, 'INDENT'),
+        commandsWait1: countCommands(raw, 'WAIT_1'),
+        commandsWait2: countCommands(raw, 'WAIT_2'),
+        commandsDelay: countCommands(raw, 'DELAY:'),
+        commandsFuncID: countCommands(raw, 'FUNC_ID:'),
+        commandsFuncAdr: countCommands(raw, 'FUNC_ADR:'),
+        commandsRaw: countCommands(raw, 'RAW:'),
+        occupancy, capacity,
+        dims: `${width}×${height}`
+      };
+    }
+
+    function renderPreview(textId, outId, width, height, charW, charH, charF) {
+      const raw = document.getElementById(textId).value;
+      const parsed = parseScript(raw);
+      const windows = buildWindows(parsed, width, height);
+      const stats = analyze(raw, parsed, windows, width, height);
+
+      const out = document.getElementById(outId);
+      out.innerHTML = '';
+
+      let sentenceIndex = 1;
+      let lastSentenceIndex = 0;
+      let windowSentenceIndexes = [];
+
+      // Calculate how windows relate to sentences
+	  // Break raw into segments by [END]
+      const endSplit = raw.split(/\[END\]/g);
+      let segmentWindowsCounts = [];
+
+      endSplit.forEach(segment => {
+        const parsedSegment = parseScript(segment);
+        const segmentWins = buildWindows(parsedSegment, width, height);
+        segmentWindowsCounts.push(segmentWins.length);
+      });
+
+      // Assign a proposal number to each window
+      let currentWindow = 0;
+      for (let i = 0; i < segmentWindowsCounts.length; i++) {
+        const count = segmentWindowsCounts[i];
+        for (let j = 0; j < count; j++) {
+          windowSentenceIndexes[currentWindow++] = i + 1;
+        }
+      }
+
+      let lastLabel = null;
+      windows.forEach((lines, i) => {
+        const sentenceNum = windowSentenceIndexes[i];
+        const winDiv = document.createElement('div');
+        winDiv.className = 'window';
+
+        if (sentenceNum !== lastLabel) {
+          const label = document.createElement('div');
+          label.className = "sentence-num"
+          label.textContent = `Sentence ${sentenceNum}`;
+          out.appendChild(label);
+          lastLabel = sentenceNum;
+        }
+
+        const frame = document.createElement('div');
+        frame.className = 'frame';
+        lines.forEach(r => {
+          const row = document.createElement('div');
+          Array.from(r).forEach(ch => {
+            const span = document.createElement('span');
+            span.className = 'char';
+            span.style.width = charW + 'px';
+            span.style.height = charH + 'px';
+            span.style.fontSize = charF + 'px';
+            span.textContent = ch;
+            row.appendChild(span);
+          });
+          frame.appendChild(row);
+        });
+        winDiv.appendChild(frame);
+        out.appendChild(winDiv);
+        stats.sentences = sentenceNum;
+      });
+
+      return stats;
+    }
+
+    function renderStats(statsArr) {
+  const container = document.getElementById('statsContainer');
+  container.innerHTML = '';
+
+  const [original, translation] = statsArr;
+
+  const commandKeys = [
+    ['commandsEnd', '[END]'],
+    ['commandsClear', '[CLEAR]'],
+    ['commandsSpace', '[SP]'],
+    ['commandsIndent', '[INDENT]'],
+    ['commandsWait1', '[WAIT_1]'],
+    ['commandsWait2', '[WAIT_2]'],
+    ['commandsDelay', '[DELAY]'],
+    ['commandsFuncID', '[FUNC_ID]'],
+    ['commandsFuncAdr', '[FUNC_ADR]'],
+    ['commandsRaw', '[RAW]']
+  ];
+
+  statsArr.forEach((s, i) => {
+    const box = document.createElement('div');
+    box.className = 'stats';
+
+    const isOriginal = i === 0;
+    const counterpart = isOriginal ? translation : original;
+
+    const commandHTML = commandKeys.map(([key, label]) => {
+      const count = s[key];
+      const otherCount = counterpart[key];
+      let color;
+      if (count === 0 && otherCount === 0) {
+        color = '#959595';
+      } else if (count === otherCount) {
+        color = 'green';
+      } else {
+        color = 'red';
+      }
+      return `<span style="color: ${color}">${label}×${count}</span>`;
+    }).join(', ');
+    // <div><b>Occupancy:</b> ${s.occupancy}/${s.capacity} (${((s.occupancy / s.capacity) * 100).toFixed(1)}%)</div>
+    box.innerHTML = `
+      <div><b>Type:</b> ${isOriginal ? 'Original' : 'Translation'}</div>
+      <div><b>Windows:</b> ${s.windowCount}, <b>Sentences</b>: ${s.sentences ? s.sentences : 0}</div>
+      <div><b>Commands entries:</b></div>
+      <div>${commandHTML}</div>
+    `;
+
+    container.appendChild(box);
+  });
+}
+
+    
+    const outputOriginal = document.getElementById('outputOriginal');
+    const outputTranslated = document.getElementById('outputTranslated');
+
+  let isSyncingScroll = false;
+
+  function syncScroll(e) {
+    if (isSyncingScroll) return;
+    isSyncingScroll = true;
+
+    const source = e.target;
+    const target = source === outputOriginal ? outputTranslated : outputOriginal;
+
+    // Source scroll percentage (0..1)
+    const scrollPercent = source.scrollTop / (source.scrollHeight - source.clientHeight);
+
+    // Set the target scrolling to the same percentage
+    target.scrollTop = scrollPercent * (target.scrollHeight - target.clientHeight);
+
+    isSyncingScroll = false;
+  }
+
+    outputOriginal.addEventListener('scroll', syncScroll);
+    outputTranslated.addEventListener('scroll', syncScroll);
+
+    function getSentencePositions(text) {
+  const positions = [];
+  const regexEnd = /\[END\]/g;
+  let lastIndex = 0;
+  positions.push(findRealStart(text, 0)); // beginning of the first sentence
+
+  let match;
+  while ((match = regexEnd.exec(text)) !== null) {
+    // the beginning of the next sentence is after [END]
+    const nextStart = match.index + match[0].length;
+    if (nextStart < text.length) {
+      positions.push(findRealStart(text, nextStart));
+    }
+    lastIndex = match.index;
+  }
+
+  return positions;
+
+  // A helper function that looks for the real beginning of a sentence,
+  // omitting [CLEAR], [RAW:*], \n and other commands at the beginning
+  function findRealStart(text, pos) {
+    let i = pos;
+    while (i < text.length) {
+      // If a command in the format [COMMAND] is encountered, skip it completely
+      if (text[i] === '[') {
+        const m = text.slice(i).match(/^\[([A-Z_0-9:]+)\]/);
+        if (m) {
+          i += m[0].length;
+          continue;
+        }
+      }
+      // Skip line breaks \n and spaces at the beginning
+      if (text[i] === '\\' && text[i+1] === 'n') { i += 2; continue; }
+      if (text[i] === '\n' || text[i] === ' ' || text[i] === '\r' || text[i] === '\t') { i++; continue; }
+
+      // The first "real" character of the text is the position for the cursor
+      break;
+    }
+    return i;
+  }
+}
+
+function scrollToSentence(textarea, pos) {
+  textarea.focus();
+  textarea.setSelectionRange(pos, pos);
+  
+  // Trying to scroll textarea so that the cursor is visible at the top
+  // Since textarea is scrolled by lines, and we are the character position, we will determine the line
+  const textBefore = textarea.value.slice(0, pos);
+  const lineNum = (textBefore.match(/\n/g) || []).length;
+  
+  const lineHeight = parseInt(getComputedStyle(textarea).lineHeight);
+  textarea.scrollTop = lineNum * lineHeight;
+}
+
+function attachClickHandlers(width, height) {
+  const inputTextarea = document.getElementById('inputScript');
+  const translatedTextarea = document.getElementById('translatedScript');
+
+  const sentencePositionsOriginal = getSentencePositions(inputTextarea.value);
+  const sentencePositionsTranslated = getSentencePositions(translatedTextarea.value);
+
+  const outputOriginal = document.getElementById('outputOriginal');
+  const outputTranslated = document.getElementById('outputTranslated');
+
+  function handleClick(el, sentencePositions, textarea) {
+    if (el.classList.contains('sentence-num')) {
+      const match = el.textContent.match(/Sentence (\d+)/);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (num > 0 && num <= sentencePositions.length) {
+          scrollToSentence(textarea, sentencePositions[num - 1]);
+        }
+      }
+    } else if (el.classList.contains('window')) {
+      let prev = el.previousElementSibling;
+      while (prev && !prev.classList.contains('sentence-num')) prev = prev.previousElementSibling;
+      if (prev) {
+        const match = prev.textContent.match(/Sentence (\d+)/);
+        if (match) {
+          const num = parseInt(match[1], 10);
+          if (num > 0 && num <= sentencePositions.length) {
+            scrollToSentence(textarea, sentencePositions[num - 1]);
+          }
+        }
+      }
+    }
+  }
+
+  // Assigning handlers to the original text
+  outputOriginal.querySelectorAll('.sentence-num, .window').forEach((el) => {
+    el.style.cursor = 'pointer';
+    el.onclick = () => handleClick(el, sentencePositionsOriginal, inputTextarea);
+  });
+
+  // Assigning handlers to translated text
+  outputTranslated.querySelectorAll('.sentence-num, .window').forEach((el) => {
+    el.style.cursor = 'pointer';
+    el.onclick = () => handleClick(el, sentencePositionsTranslated, translatedTextarea);
+  });
+}
+
+
+function render() {
+  let width, height;
+  const preset = document.getElementById('presetSize').value;
+  if (preset !== 'custom') [width, height] = preset.split('x').map(n => +n);
+  else width = +document.getElementById('widthChars').value, height = +document.getElementById('heightLines').value;
+  document.getElementById('widthChars').value = width;
+  document.getElementById('heightLines').value = height;
+  const charW = +document.getElementById('charWidth').value;
+  const charH = +document.getElementById('charHeight').value;
+  const charF = +document.getElementById('charFont').value;
+
+  const statsIn = renderPreview('inputScript', 'outputOriginal', width, height, charW, charH, charF);
+  const statsTr = renderPreview('translatedScript', 'outputTranslated', width, height, charW, charH, charF);
+  renderStats([statsIn, statsTr]);
+
+  // We attach clicks to outputOriginal after rendering
+  attachClickHandlers(width, height);
+  attachHoverHandlers()
+}
+
+['inputScript', 'translatedScript', 'presetSize', 'widthChars', 'heightLines', 'charWidth', 'charHeight', 'charFont']
+  .forEach(id => document.getElementById(id).addEventListener('input', render));
+render();
+
+function attachHoverHandlers() {
+  const outputOriginal = document.getElementById('outputOriginal');
+  const outputTranslated = document.getElementById('outputTranslated');
+
+  function addHoverEvents(container) {
+    container.querySelectorAll('.window').forEach(win => {
+      win.addEventListener('mouseenter', () => {
+        let prev = win.previousElementSibling;
+        while (prev && !prev.classList.contains('sentence-num')) prev = prev.previousElementSibling;
+        if (prev) prev.classList.add('highlight');
+      });
+      win.addEventListener('mouseleave', () => {
+        let prev = win.previousElementSibling;
+        while (prev && !prev.classList.contains('sentence-num')) prev = prev.previousElementSibling;
+        if (prev) prev.classList.remove('highlight');
+      });
+    });
+  }
+
+  addHoverEvents(outputOriginal);
+  addHoverEvents(outputTranslated);
+}
+
+
+divider.addEventListener('mousedown', e => {
+  isDragging = true;
+  document.body.style.cursor = 'ew-resize';
+  document.body.style.userSelect = 'none'; // Disable text selection
+});
+
+document.addEventListener('mouseup', () => {
+  if (isDragging) {
+    isDragging = false;
+    document.body.style.cursor = '';
+    document.body.style.userSelect = ''; // Revert selection back
+  }
+});
+
+
+  </script>
+</body>
+</html>

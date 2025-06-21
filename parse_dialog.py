@@ -29,17 +29,17 @@ def parse_dialog_text(text_bytes, font_map: FontMapper):
         # Control characters
         # 0x00 - [END] end of string
         # 0x01:0x0a - font code
-        # 0x0b - [WAIT] wait for any button to be pressed and continue with a new line
-        # 0x0c - [FUNC:XX] call a function by index in a table
-        # 0x0e - [SCROLL] 
+        # 0x0b - [WAIT_1] wait for any button to be pressed and continue with a new line
+        # 0x0c - [FUNC_ID:XX] call a function by index in a table
+        # 0x0d - \n
+        # 0x0e - [INDENT] sets the indentation for the following lines based on the current position in the line
         #
         # 0x0f - special control
-        #        0x00 - [DELAY:XX]
-        #        0x01 - [WAIT_PRESS]
-        #        0x02 - [CLEAR]
-        #        0x04 - [FUNC_CALL:0x{addr:04X}]
+        #        0x00 - [DELAY:XX] frames count
+        #        0x01 - [WAIT_2] wait for input without new line
+        #        0x02 - [CLEAR] clear window and continue output
+        #        0x04 - [FUNC_ADR:0x{addr:04X}] call a function by address
         #
-        # 0x0d - \n
         # 0x20 - " " or [SP:X] if there are more than 2
         # 0x25 - "%" string formatting
         # >= 0x20  - ascii characters that are encoded through "ascii-table.bin"
@@ -59,17 +59,17 @@ def parse_dialog_text(text_bytes, font_map: FontMapper):
             output.append(font_map.get_char(code))
 
         elif byte == 0x0B:
-            output.append("[WAIT]")
+            output.append("[WAIT_1]")
 
         elif byte == 0x0C and is_next() is not None:
             func_id = read_next()
-            output.append(f"[FUNC:{func_id}]")
+            output.append(f"[FUNC_ID:{func_id}]")
 
         elif byte == 0x0D:
             output.append("\n")
 
         elif byte == 0x0E:
-            output.append("[SCROLL]")
+            output.append("[INDENT]")
 
         elif byte == 0x0F and is_next() is not None:
             subcmd = read_next()
@@ -77,7 +77,7 @@ def parse_dialog_text(text_bytes, font_map: FontMapper):
                 delay = read_next()
                 output.append(f"[DELAY:{delay}]")
             elif subcmd == 0x01:
-                output.append("[WAIT_PRESS]")
+                output.append("[WAIT_2]")
                 i -= 2
             elif subcmd == 0x02:
                 output.append("[CLEAR]")
@@ -86,9 +86,9 @@ def parse_dialog_text(text_bytes, font_map: FontMapper):
                 arg2 = read_next()
                 if arg1 is not None and arg2 is not None:
                     addr = (arg2 << 8) | arg1
-                    output.append(f"[FUNC_CALL:0x{addr:04X}]")
+                    output.append(f"[FUNC_ADR:0x{addr:04X}]")
                 else:
-                    output.append("[FUNC_CALL:??]")
+                    output.append("[FUNC_ADR:??]")
             else:
                 output.append(f"[PAUSE:UNKNOWN:{subcmd}]")
 
@@ -319,6 +319,7 @@ def main():
 
     parser.add_argument("file", help="Input dialog file")
     parser.add_argument("dialog_data_out", help="Path to write parsed json data")
+    parser.add_argument("excel_out", help="Path to write excel entries")
     
     parser.add_argument(
         "--font_table",
@@ -341,10 +342,9 @@ def main():
         json.dump(dialog_data, out, indent=2, ensure_ascii=False)
     
     print("[+] Json dialog_data extracted to:", args.dialog_data_out)
-        
-    export_to_csv(dialog_data["block_3"]["table_entries"], "./dialogs/export.csv")    
-    export_to_excel(dialog_data["block_3"]["table_entries"], "./dialogs/export.xlsx")   
-    export_to_excel_escape(dialog_data["block_3"]["table_entries"], "./dialogs/export-escape.xlsx")   
+
+    export_to_excel_escape(dialog_data["block_3"]["table_entries"], args.excel_out)   
+    print("[+] Excel dialog_data entries extracted to:", args.excel_out)
         
 if __name__ == '__main__':
     main()

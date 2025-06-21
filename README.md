@@ -4,19 +4,19 @@ Also known as **"Reikoku - Kizoku Ikeda's Psychics Laboratory"**
 This project contains tools and scripts used for unpacking, modifying, and translating the game files.
 
 ## TODO
-- [-] Understand how text is encoded and displayed on screen  
+- [ ] Understand how text is encoded and displayed on screen  
 - [ ] Fix all inaccuracies in `font-table.txt`  
 - [x] Unpack and repack the `SPIRIT.DAT` file  
-- Parse and pack text from files:  
+- Parse and pack text from files
   - [x] `.dialog` (level texts)  
   - [ ] `.scenario` (Haunted Locations texts)  
   - [ ] `.database` (database texts)  
-- Translate all texts:  
+- Translate all texts
   - [ ] Level dialogue text  
   - [ ] Haunted Locations  
   - [ ] Interface/items and others  
   - [ ] Database  
-- Translate all graphics:  
+- Translate all graphics
   - [ ] Images/interface of the database  
   - [ ] Settings/loading/other menus  
   - [ ] Sprites/textures  

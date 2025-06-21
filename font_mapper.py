@@ -93,7 +93,7 @@ def main():
         if font_code is not None:
             idx = list(fm.font_table.keys()).index(font_code)
             table, row, col = calc_position(idx)
-            print(f"  Font code: 0x{font_code:03X} (table {table+1}, row {row+1}, col {col+1})")
+            print(f"  Font code: 0x{font_code:04X} (table {table+1}, row {row+1}, col {col+1})")
         else:
             print("  Not found in font-table")
             
@@ -102,14 +102,19 @@ def main():
         if ascii_code is not None:
             pos = ascii_code - 0x20
             table, row, col = calc_position(pos)
-            print(f"  ASCII code: 0x{ascii_code:02X} (table {table}, row {row}, col {col})")
+            print(f"  2-bytes code: 0x{ascii_code:02X} (table {table}, row {row}, col {col})")
         else:
             print("  Not mapped in ascii-table")
         print()
+        return ascii_code or font_code
 
     if args.command == "info-chars":
+        codes = ""
         for c in args.chars:
-            show_info_for_char(c)
+            code = show_info_for_char(c)
+            codes += f" {code:04X}"
+        if len(codes) > 1:
+            print(f"[+] Codes: {codes}")
 
     elif args.command == "info-code":
         chars = ""
