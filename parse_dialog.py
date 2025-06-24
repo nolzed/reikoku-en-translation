@@ -239,7 +239,7 @@ def parse_dialog(data, font_map: FontMapper):
         if i+1 < len(table_offsets):
             size = table_offsets[i+1] - table_offsets[i]
         else:
-            size = block_3_size - table_offsets[i]
+            size = block_3_size - table_offsets[i] - 4
         entry_offset = offset + table_offsets[i]
         table_entry = data[entry_offset:entry_offset+size]
         table_raw_entries.append(table_entry.hex())
@@ -315,7 +315,7 @@ def export_to_excel_escape(entries, filename, default_row_height=15):
     wb.save(filename)
     
 def main():
-    parser = argparse.ArgumentParser(description="Parse dialog file")
+    parser = argparse.ArgumentParser(description="Parse script file")
 
     parser.add_argument("file", help="Input dialog file")
     parser.add_argument("dialog_data_out", help="Path to write parsed json data")
@@ -323,12 +323,12 @@ def main():
     
     parser.add_argument(
         "--font_table",
-        default="./font/ascii-table.bin",
+        default="./font/font-table.txt",
         help="Path to font-table.txt"
     )
     parser.add_argument(
         "--ascii_table",
-        default="./font/font-table.txt",
+        default="./font/ascii-table.bin",
         help="Path to ascii-table.bin"
     )
     args = parser.parse_args()
@@ -336,7 +336,7 @@ def main():
     with open(args.file, 'rb') as f1:
         data = f1.read()
 
-    dialog_data = parse_dialog(data, FontMapper(args.font_table, args.ascii_table)) # parse_scenario
+    dialog_data = parse_dialog(data, FontMapper(args.ascii_table, args.font_table)) # parse_scenario
     
     with open(args.dialog_data_out, 'w', encoding='utf-8') as out:
         json.dump(dialog_data, out, indent=2, ensure_ascii=False)

@@ -30,10 +30,10 @@ class FontMapper:
         return table
 
     def _load_font_table(self, path: str) -> dict:
-        raw = Path(path).read_text(encoding='utf-8', errors='ignore')
+        raw = Path(path).read_text(encoding='utf-8')
         raw = raw.replace('\r', '').replace('\n', '')
         if not raw:
-            raise ValueError("font-table.txt Empty or unread.")
+            raise ValueError("font table Empty or unread.")
         table = {}
         for i, ch in enumerate(raw):
             code = (i + 0x100) & 0xFFF
@@ -118,8 +118,16 @@ def main():
 
     elif args.command == "info-code":
         chars = ""
+        two_byte_char = ""
         for code_str in args.codes:
             
+            if int(code_str, 16) < 20:
+                two_byte_char = code_str
+                continue
+            elif two_byte_char:
+                code_str = two_byte_char + code_str
+                two_byte_char = ""
+                
             if len(code_str) == 4:
                 try:
                     fc = int(code_str, 16)

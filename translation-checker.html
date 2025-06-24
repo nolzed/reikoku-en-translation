@@ -89,6 +89,8 @@
             <option value="19x3">19×3 (Dialogue)</option>
             <option value="19x12">19×12 (High Dialogue)</option>
             <option value="19x10">19×10 (Database)</option>
+			<option value="fixed1">33×3 (Fixed Dialogue)</option>
+            <option value="fixed2">33×12 (Fixed High Dialogue)</option>
             <option value="custom">Custom</option>
           </select>
         </label>
@@ -494,12 +496,27 @@ function attachClickHandlers(width, height) {
 
 
 function render() {
-  let width, height;
+  let width, height, charWidth;
   const preset = document.getElementById('presetSize').value;
-  if (preset !== 'custom') [width, height] = preset.split('x').map(n => +n);
-  else width = +document.getElementById('widthChars').value, height = +document.getElementById('heightLines').value;
+  if (preset === 'fixed1') {
+	  width = 33;
+	  height = 3;
+	  charWidth = 9;
+	} else if (preset === 'fixed2') {
+	  width = 33;
+	  height = 12;
+	  charWidth = 9;
+	} else if (preset !== 'custom') {
+	  [width, height] = preset.split('x').map(n => +n);
+	  charWidth = 18;
+	} else {
+	  width = +document.getElementById('widthChars').value;
+	  height = +document.getElementById('heightLines').value;
+	  charWidth = 18;
+	}
   document.getElementById('widthChars').value = width;
   document.getElementById('heightLines').value = height;
+  document.getElementById('charWidth').value = charWidth;
   const charW = +document.getElementById('charWidth').value;
   const charH = +document.getElementById('charHeight').value;
   const charF = +document.getElementById('charFont').value;
