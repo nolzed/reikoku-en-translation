@@ -9,9 +9,23 @@
     .container { display: flex; flex: 1; overflow: hidden; }
     .pane { display: flex; flex-direction: column; padding: 10px; box-sizing: border-box; overflow: hidden; background-color: #f6fbff;}
     textarea { flex: 1; resize: none; font-family: monospace; }
-    .controls { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px; }
-    .controls label { display: flex; flex-direction: column; font-size: 0.9rem; }
-    .outputs { display: flex; gap: 10px; flex: 1; overflow: auto; }
+    .controls {display: flex; flex-wrap: wrap; gap: 8px;  margin-top: 10px;
+    
+    font-size: 0.85rem; padding: 4px; border: 1px solid #aaa; border-radius: 4px; background-color: #ffffff;
+  
+  }
+    .controls label { display: flex; flex-direction: column; font-size: 0.9rem; background-color: #eafcff;
+    border: 1px solid;
+    border-radius: 3px;
+    padding: 4px;
+	}
+  .controls-container { display: flex; gap: 10px; justify-content: center;}
+
+  .controls-presets {margin-top: 0; width: -webkit-fill-available;}
+
+  .controls-presets label {flex: 1;}
+
+    .outputs { display: flex; gap: 10px; flex: 1; overflow: auto; margin-top: 10px;}
     .output { flex: 1; border: 1px solid #333; padding: 5px; box-sizing: border-box; overflow: auto; background-color: #f7f7f7;}
     .stats-container { display: flex; gap: 10px; margin-top: 10px; }
     .stats { font-size: 0.85rem; color: #555; padding: 4px; border: 1px solid #aaa; border-radius: 4px; flex: 1; background-color: #ffffff;}
@@ -19,6 +33,7 @@
     .window-wrapper { margin-bottom: 8px; }
     .sentence-label { font-size: 0.75rem; color: #333; margin-bottom: 2px; }
     .window { border: 1px solid #666; overflow: hidden; width: fit-content; min-width: max-content; background-color: #ffffff;} 
+    .empty-window { visibility: hidden; }
     .frame { padding: 4px; box-sizing: border-box; width: fit-content; }
     .char { display: inline-block; text-align: center; box-sizing: border-box; line-height: 1; vertical-align: top; }
     .divider {
@@ -59,24 +74,55 @@
       font-weight: bold; 
     }
 
-.char {
-  display: inline-flex;       
-  justify-content: center;   
-  align-items: center;        
-  width: 16px;                
-  height: 20px;              
-  font-size: 14px;           
-  line-height: 1;             
-  font-family: monospace;
-}
+    .char {
+      display: inline-flex;       
+      justify-content: center;   
+      align-items: center;        
+      width: 16px;                
+      height: 20px;              
+      font-size: 14px;           
+      line-height: 1;             
+      font-family: monospace;
+    }
 
-.frame div {
-    display: flex;
-}
+    .frame div {
+        display: flex;
+    }
 
-  </style>
+    .tooltip {
+      position: relative;
+      display: inline-block;
+      cursor: help;
+      border-bottom: 1px solid #0400ff47;
+    }
+
+    .tooltip .tooltip-text {
+      visibility: hidden;
+      background-color: #333;
+      color: #fff;
+      font-size: 12px;
+      text-align: left;
+      border-radius: 6px;
+      padding: 8px;
+      position: absolute;
+      z-index: 10;
+      bottom: 125%;
+      left: 0;
+      width: max-content;
+      max-width: 220px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .tooltip:hover .tooltip-text {
+      visibility: visible;
+      opacity: 1;
+    }
+
+</style>
 </head>
 <body>
+
   <div class="container">
     <div id="leftPane" class="pane" style="flex: 1;">
       <h3>Original Script</h3>
@@ -84,26 +130,51 @@
       <h3>Translation</h3>
       <textarea id="translatedScript" placeholder="Enter translated script..."></textarea>
       <div class="controls">
-        <label>Preset Size:
-          <select id="presetSize">
-            <option value="19x3">19×3 (Dialogue)</option>
-            <option value="19x12">19×12 (High Dialogue)</option>
-            <option value="19x10">19×10 (Database)</option>
-			<option value="fixed1">33×3 (Fixed Dialogue)</option>
-            <option value="fixed2">33×12 (Fixed High Dialogue)</option>
-            <option value="custom">Custom</option>
-          </select>
-        </label>
-        <label>Width (chars):<input type="number" id="widthChars" value="19" min="1"></label>
-        <label>Height (lines):<input type="number" id="heightLines" value="3" min="1"></label>
         <label>Font Size (px):<input type="number" id="charFont" value="16" min="1"></label>
-        <label>Char Width (px):<input type="number" id="charWidth" value="18" min="1"></label>
         <label>Char Height (px):<input type="number" id="charHeight" value="20" min="1"></label>
+        <label>Auto-render<input type="checkbox" id="autoRender" checked></label>
+        <label>Auto-align sentences<input type="checkbox" id="autoAlign" checked></label>
+        <label>Sync Scroll<input type="checkbox" id="syncScrollCheck" checked></label>
+        <button id="renderBtn" style="margin-left: auto; padding: 5px 15px;">Render</button>
       </div>
     </div>
     <div id="divider" class="divider"></div>
     <div id="rightPane" class="pane" style="flex: 1;">
-      <h3>Output Preview</h3>
+      <div style="display: flex; justify-content: space-around;">
+        <h3>Original</h3>
+        <h3>Translation</h3>
+      </div>
+      <div class="controls-container" id="controlsContainer">
+        <!-- Original -->
+        <div class="controls controls-presets original-preset">
+          <label>Original Preset:
+            <select id="presetSizeOriginal">
+              <option value="19x3">Dialogue</option>
+              <option value="19x12">High Dialogue</option>
+              <option value="19x10">Database</option>
+              <option value="custom">Custom</option>
+          </select>
+          </label>
+          <label>Width (chars):<input type="number" id="widthCharsOriginal" value="19" min="1"></label>
+          <label>Height (lines):<input type="number" id="heightLinesOriginal" value="3" min="1"></label>
+          <label>Char Width (px):<input type="number" id="charWidthOriginal" value="18" min="1"></label>
+        </div>
+      
+        <!-- Translated -->
+        <div class="controls controls-presets transition-preset">
+          <label>Translation Preset:
+            <select id="presetSizeTranslated">
+              <option value="fixed1">Dialogue</option>
+              <option value="fixed2">High Dialogue</option>
+              <option value="19x10">Database</option>
+              <option value="custom">Custom</option>
+            </select>
+          </label>
+          <label>Width (chars):<input type="number" id="widthCharsTranslated" value="33" min="1"></label>
+          <label>Height (lines):<input type="number" id="heightLinesTranslated" value="3" min="1"></label>
+          <label>Char Width (px):<input type="number" id="charWidthTranslated" value="9" min="1"></label>
+        </div>
+      </div>
       <div class="outputs">
         <div class="output" id="outputOriginal"></div>
         <div class="output" id="outputTranslated"></div>
@@ -111,32 +182,32 @@
       <div class="stats-container" id="statsContainer"></div>
     </div>
   </div>
+<script>
 
-  <script>
-    const divider = document.getElementById('divider');
-    const leftPane = document.getElementById('leftPane');
-    const rightPane = document.getElementById('rightPane');
-    let isDragging = false;
+const divider = document.getElementById('divider');
+const leftPane = document.getElementById('leftPane');
+const rightPane = document.getElementById('rightPane');
+let isDragging = false;
 
-    divider.addEventListener('mousedown', e => { isDragging = true; document.body.style.cursor = 'ew-resize'; });
-    document.addEventListener('mousemove', e => {
-      if (!isDragging) return;
-      const rect = document.querySelector('.container').getBoundingClientRect();
-      let x = e.clientX - rect.left;
-      const min = 100, max = rect.width - min;
-      x = Math.min(Math.max(x, min), max);
-      leftPane.style.flex = `0 0 ${x}px`;
-    });
-    document.addEventListener('mouseup', () => { if (isDragging) { isDragging = false; document.body.style.cursor = ''; } });
+divider.addEventListener('mousedown', e => { isDragging = true; document.body.style.cursor = 'ew-resize'; });
+document.addEventListener('mousemove', e => {
+  if (!isDragging) return;
+  const rect = document.querySelector('.container').getBoundingClientRect();
+  let x = e.clientX - rect.left;
+  const min = 100, max = rect.width - min;
+  x = Math.min(Math.max(x, min), max);
+  leftPane.style.flex = `0 0 ${x}px`;
+});
+document.addEventListener('mouseup', () => { if (isDragging) { isDragging = false; document.body.style.cursor = ''; } });
 
-    function countCommands(text, cmd) {
-      const regex = cmd.includes(':')
-        ? new RegExp(`\\[${cmd.replace(':', ':.*?')}\\]`, 'g')   // commands with params
-        : new RegExp(`\\[${cmd}\\]`, 'g');                       // regular commands
-      return (text.match(regex) || []).length;
-    }
+function countCommands(text, cmd) {
+  const regex = cmd.includes(':')
+    ? new RegExp(`\\[${cmd.replace(':', ':.*?')}\\]`, 'g')   // commands with params
+    : new RegExp(`\\[${cmd}\\]`, 'g');                       // regular commands
+  return (text.match(regex) || []).length;
+}
 
-    function parseScript(text) {
+function parseScript(text) {
   let tokens = [], i = 0;
   let lastWasNewline = false;
 
@@ -177,7 +248,7 @@
   return tokens.join('');
 }
 
-    function buildWindows(parsed, width, height) {
+function buildWindows(parsed, width, height) {
   const segments = [];
   let buffer = '';
   for (let i = 0; i < parsed.length;) {
@@ -191,7 +262,7 @@
 
   const windows = [];
   segments.forEach(text => {
-    const lines = ['']; 
+    const lines = [''];
     let indent = 0;
     for (let i = 0; i < text.length;) {
       if (text[i] === '\n') {
@@ -204,10 +275,10 @@
         i++;
         continue;
       }
-      if (text.startsWith('{INTEND}', i)) { 
-        indent = lines[lines.length - 1].length; 
-        i += 8; 
-        continue; 
+      if (text.startsWith('{INTEND}', i)) {
+        indent = lines[lines.length - 1].length;
+        i += 8;
+        continue;
       }
       const ch = text[i++];
       let line = lines[lines.length - 1];
@@ -225,98 +296,98 @@
 }
 
 
-    function analyze(raw, parsed, windows, width, height) {
-      const totalParsedChars = parsed.replace(/\{.*?\}/g, '').length;
-      const occupancy = windows.reduce((sum, w) => sum + w.join('').trim().length, 0);
-      const capacity = windows.length * width * height;
-      return {
-        windowCount: windows.length,
-        commandsEnd: countCommands(raw, 'END'),
-        commandsClear: countCommands(raw, 'CLEAR'),
-        commandsSpace: countCommands(raw, 'SP:'),
-        commandsIndent: countCommands(raw, 'INDENT'),
-        commandsWait1: countCommands(raw, 'WAIT_1'),
-        commandsWait2: countCommands(raw, 'WAIT_2'),
-        commandsDelay: countCommands(raw, 'DELAY:'),
-        commandsFuncID: countCommands(raw, 'FUNC_ID:'),
-        commandsFuncAdr: countCommands(raw, 'FUNC_ADR:'),
-        commandsRaw: countCommands(raw, 'RAW:'),
-        occupancy, capacity,
-        dims: `${width}×${height}`
-      };
+function analyze(raw, parsed, windows, width, height) {
+  const totalParsedChars = parsed.replace(/\{.*?\}/g, '').length;
+  const occupancy = windows.reduce((sum, w) => sum + w.join('').trim().length, 0);
+  const capacity = windows.length * width * height;
+  return {
+    windowCount: windows.length,
+    commandsEnd: countCommands(raw, 'END'),
+    commandsClear: countCommands(raw, 'CLEAR'),
+    commandsSpace: countCommands(raw, 'SP:'),
+    commandsIndent: countCommands(raw, 'INDENT'),
+    commandsWait1: countCommands(raw, 'WAIT_1'),
+    commandsWait2: countCommands(raw, 'WAIT_2'),
+    commandsDelay: countCommands(raw, 'DELAY:'),
+    commandsFuncID: countCommands(raw, 'FUNC_ID:'),
+    commandsFuncAdr: countCommands(raw, 'FUNC_ADR:'),
+    commandsRaw: countCommands(raw, 'RAW:'),
+    occupancy, capacity,
+    dims: `${width}×${height}`
+  };
+}
+
+function renderPreview(textId, outId, width, height, charW, charH, charF) {
+  const raw = document.getElementById(textId).value;
+  const parsed = parseScript(raw);
+  const windows = buildWindows(parsed, width, height);
+  const stats = analyze(raw, parsed, windows, width, height);
+
+  const out = document.getElementById(outId);
+  out.innerHTML = '';
+
+  let sentenceIndex = 1;
+  let lastSentenceIndex = 0;
+  let windowSentenceIndexes = [];
+
+  // Calculate how windows relate to sentences
+  // Break raw into segments by [END]
+  const endSplit = raw.split(/\[END\]/g);
+  let segmentWindowsCounts = [];
+
+  endSplit.forEach(segment => {
+    const parsedSegment = parseScript(segment);
+    const segmentWins = buildWindows(parsedSegment, width, height);
+    segmentWindowsCounts.push(segmentWins.length);
+  });
+
+  // Assign a proposal number to each window
+  let currentWindow = 0;
+  for (let i = 0; i < segmentWindowsCounts.length; i++) {
+    const count = segmentWindowsCounts[i];
+    for (let j = 0; j < count; j++) {
+      windowSentenceIndexes[currentWindow++] = i + 1;
+    }
+  }
+
+  let lastLabel = null;
+  windows.forEach((lines, i) => {
+    const sentenceNum = windowSentenceIndexes[i];
+    const winDiv = document.createElement('div');
+    winDiv.className = 'window';
+
+    if (sentenceNum !== lastLabel) {
+      const label = document.createElement('div');
+      label.className = "sentence-num"
+      label.textContent = `Sentence ${sentenceNum}`;
+      out.appendChild(label);
+      lastLabel = sentenceNum;
     }
 
-    function renderPreview(textId, outId, width, height, charW, charH, charF) {
-      const raw = document.getElementById(textId).value;
-      const parsed = parseScript(raw);
-      const windows = buildWindows(parsed, width, height);
-      const stats = analyze(raw, parsed, windows, width, height);
-
-      const out = document.getElementById(outId);
-      out.innerHTML = '';
-
-      let sentenceIndex = 1;
-      let lastSentenceIndex = 0;
-      let windowSentenceIndexes = [];
-
-      // Calculate how windows relate to sentences
-	  // Break raw into segments by [END]
-      const endSplit = raw.split(/\[END\]/g);
-      let segmentWindowsCounts = [];
-
-      endSplit.forEach(segment => {
-        const parsedSegment = parseScript(segment);
-        const segmentWins = buildWindows(parsedSegment, width, height);
-        segmentWindowsCounts.push(segmentWins.length);
+    const frame = document.createElement('div');
+    frame.className = 'frame';
+    lines.forEach(r => {
+      const row = document.createElement('div');
+      Array.from(r).forEach(ch => {
+        const span = document.createElement('span');
+        span.className = 'char';
+        span.style.width = charW + 'px';
+        span.style.height = charH + 'px';
+        span.style.fontSize = charF + 'px';
+        span.textContent = ch;
+        row.appendChild(span);
       });
+      frame.appendChild(row);
+    });
+    winDiv.appendChild(frame);
+    out.appendChild(winDiv);
+    stats.sentences = sentenceNum;
+  });
 
-      // Assign a proposal number to each window
-      let currentWindow = 0;
-      for (let i = 0; i < segmentWindowsCounts.length; i++) {
-        const count = segmentWindowsCounts[i];
-        for (let j = 0; j < count; j++) {
-          windowSentenceIndexes[currentWindow++] = i + 1;
-        }
-      }
+  return stats;
+}
 
-      let lastLabel = null;
-      windows.forEach((lines, i) => {
-        const sentenceNum = windowSentenceIndexes[i];
-        const winDiv = document.createElement('div');
-        winDiv.className = 'window';
-
-        if (sentenceNum !== lastLabel) {
-          const label = document.createElement('div');
-          label.className = "sentence-num"
-          label.textContent = `Sentence ${sentenceNum}`;
-          out.appendChild(label);
-          lastLabel = sentenceNum;
-        }
-
-        const frame = document.createElement('div');
-        frame.className = 'frame';
-        lines.forEach(r => {
-          const row = document.createElement('div');
-          Array.from(r).forEach(ch => {
-            const span = document.createElement('span');
-            span.className = 'char';
-            span.style.width = charW + 'px';
-            span.style.height = charH + 'px';
-            span.style.fontSize = charF + 'px';
-            span.textContent = ch;
-            row.appendChild(span);
-          });
-          frame.appendChild(row);
-        });
-        winDiv.appendChild(frame);
-        out.appendChild(winDiv);
-        stats.sentences = sentenceNum;
-      });
-
-      return stats;
-    }
-
-    function renderStats(statsArr) {
+function renderStats(statsArr) {
   const container = document.getElementById('statsContainer');
   container.innerHTML = '';
 
@@ -349,50 +420,66 @@
       if (count === 0 && otherCount === 0) {
         color = '#959595';
       } else if (count === otherCount) {
+        color = 'blue';
+      } else if (count > otherCount) {
         color = 'green';
-      } else {
+      } else if (count < otherCount) {
         color = 'red';
       }
       return `<span style="color: ${color}">${label}×${count}</span>`;
     }).join(', ');
     // <div><b>Occupancy:</b> ${s.occupancy}/${s.capacity} (${((s.occupancy / s.capacity) * 100).toFixed(1)}%)</div>
     box.innerHTML = `
-      <div><b>Type:</b> ${isOriginal ? 'Original' : 'Translation'}</div>
-      <div><b>Windows:</b> ${s.windowCount}, <b>Sentences</b>: ${s.sentences ? s.sentences : 0}</div>
-      <div><b>Commands entries:</b></div>
-      <div>${commandHTML}</div>
-    `;
+<div><b>Windows:</b> ${s.windowCount}, <b>Sentences</b>: ${s.sentences ? s.sentences : 0}</div>
+<div class="tooltip">
+  <b>Commands entries:</b>
+  <div class="tooltip-text">
+    [END] — End of entry<br>
+    [CLEAR] — Clear Window<br>
+    [SP:XX] — Consecutive spaces<br>
+    [INDENT] — Sets the indentation from current pos<br>
+    [WAIT_1] — Wait for input and continue with a new line<br>
+    [WAIT_2] — Wait for input<br>
+    [DELAY:XX] — Delay before withdrawal, 60 (~1 second)<br>
+    ... — Do not affect
+  </div>
+</div>
+<div>${commandHTML}</div>
+`;
 
     container.appendChild(box);
   });
 }
 
-    
-    const outputOriginal = document.getElementById('outputOriginal');
-    const outputTranslated = document.getElementById('outputTranslated');
 
-  let isSyncingScroll = false;
+const outputOriginal = document.getElementById('outputOriginal');
+const outputTranslated = document.getElementById('outputTranslated');
 
-  function syncScroll(e) {
-    if (isSyncingScroll) return;
-    isSyncingScroll = true;
+let isSyncingScroll = false;
 
-    const source = e.target;
-    const target = source === outputOriginal ? outputTranslated : outputOriginal;
-
-    // Source scroll percentage (0..1)
-    const scrollPercent = source.scrollTop / (source.scrollHeight - source.clientHeight);
-
-    // Set the target scrolling to the same percentage
-    target.scrollTop = scrollPercent * (target.scrollHeight - target.clientHeight);
-
-    isSyncingScroll = false;
+function syncScroll(e) {
+  if (!document.getElementById('syncScrollCheck').checked) {
+    return;
   }
+  if (isSyncingScroll) return;
+  isSyncingScroll = true;
 
-    outputOriginal.addEventListener('scroll', syncScroll);
-    outputTranslated.addEventListener('scroll', syncScroll);
+  const source = e.target;
+  const target = source === outputOriginal ? outputTranslated : outputOriginal;
 
-    function getSentencePositions(text) {
+  // Source scroll percentage (0..1)
+  const scrollPercent = source.scrollTop / (source.scrollHeight - source.clientHeight);
+
+  // Set the target scrolling to the same percentage
+  target.scrollTop = scrollPercent * (target.scrollHeight - target.clientHeight);
+
+  isSyncingScroll = false;
+}
+
+outputOriginal.addEventListener('scroll', syncScroll);
+outputTranslated.addEventListener('scroll', syncScroll);
+
+function getSentencePositions(text) {
   const positions = [];
   const regexEnd = /\[END\]/g;
   let lastIndex = 0;
@@ -424,7 +511,7 @@
         }
       }
       // Skip line breaks \n and spaces at the beginning
-      if (text[i] === '\\' && text[i+1] === 'n') { i += 2; continue; }
+      if (text[i] === '\\' && text[i + 1] === 'n') { i += 2; continue; }
       if (text[i] === '\n' || text[i] === ' ' || text[i] === '\r' || text[i] === '\t') { i++; continue; }
 
       // The first "real" character of the text is the position for the cursor
@@ -435,17 +522,32 @@
 }
 
 function scrollToSentence(textarea, pos) {
+  const value = textarea.value;
+
+  // Find the beginning of the string (the first \n before the position or 0)
+  let start = value.lastIndexOf('\n', pos - 1);
+  start = start === -1 ? 0 : start + 1;
+
+  // Find the end of the line (the first \n after the position or the end of the text)
+  let end = value.indexOf('\n', pos);
+  end = end === -1 ? value.length : end;
+
+  // Let's set the selection of the entire line
   textarea.focus();
-  textarea.setSelectionRange(pos, pos);
-  
-  // Trying to scroll textarea so that the cursor is visible at the top
-  // Since textarea is scrolled by lines, and we are the character position, we will determine the line
-  const textBefore = textarea.value.slice(0, pos);
-  const lineNum = (textBefore.match(/\n/g) || []).length;
-  
-  const lineHeight = parseInt(getComputedStyle(textarea).lineHeight);
-  textarea.scrollTop = lineNum * lineHeight;
+  textarea.setSelectionRange(start, end); // (start, start) to move the cursor
+
+  // Let's scroll the textarea so that the cursor is in the center
+  // Create a temporary hidden div with the same styles to measure the line position
+  const beforeText = value.slice(0, start);
+  const linesBefore = beforeText.split('\n').length - 1;
+
+  const lineHeight = parseFloat(getComputedStyle(textarea).lineHeight) || 20;
+  const scrollTop = linesBefore * lineHeight - textarea.clientHeight / 2;
+
+  textarea.scrollTop = scrollTop;
 }
+
+
 
 function attachClickHandlers(width, height) {
   const inputTextarea = document.getElementById('inputScript');
@@ -457,81 +559,183 @@ function attachClickHandlers(width, height) {
   const outputOriginal = document.getElementById('outputOriginal');
   const outputTranslated = document.getElementById('outputTranslated');
 
-  function handleClick(el, sentencePositions, textarea) {
-    if (el.classList.contains('sentence-num')) {
-      const match = el.textContent.match(/Sentence (\d+)/);
+  function getSentenceNumFromElement(el) {
+    let target = el;
+    // If it is a window, we look for the previous element with the sentence number
+    if (el.classList.contains('window')) {
+      target = el.previousElementSibling;
+      while (target && !target.classList.contains('sentence-num')) {
+        target = target.previousElementSibling;
+      }
+    }
+    if (target && target.classList.contains('sentence-num')) {
+      const match = target.textContent.match(/Sentence (\d+)/);
       if (match) {
-        const num = parseInt(match[1], 10);
-        if (num > 0 && num <= sentencePositions.length) {
-          scrollToSentence(textarea, sentencePositions[num - 1]);
-        }
+        return parseInt(match[1], 10);
       }
-    } else if (el.classList.contains('window')) {
-      let prev = el.previousElementSibling;
-      while (prev && !prev.classList.contains('sentence-num')) prev = prev.previousElementSibling;
-      if (prev) {
-        const match = prev.textContent.match(/Sentence (\d+)/);
-        if (match) {
-          const num = parseInt(match[1], 10);
-          if (num > 0 && num <= sentencePositions.length) {
-            scrollToSentence(textarea, sentencePositions[num - 1]);
-          }
-        }
-      }
+    }
+    return null;
+  }
+
+  function handleClick(el) {
+    const num = getSentenceNumFromElement(el);
+    if (num === null) return;
+
+    // We determine which block was clicked - the original or the translation
+    const isOriginal = el.closest('#outputOriginal') !== null;
+
+    // First, select in another textarea (without focus)
+    if (num > 0 && num <= sentencePositionsOriginal.length && !isOriginal) {
+      scrollToSentence(inputTextarea, sentencePositionsOriginal[num - 1]);
+    }
+    if (num > 0 && num <= sentencePositionsTranslated.length && isOriginal) {
+      scrollToSentence(translatedTextarea, sentencePositionsTranslated[num - 1]);
+    }
+
+    // Then we select in the textarea where the click was (with focus)
+    if (num > 0 && num <= sentencePositionsOriginal.length && isOriginal) {
+      scrollToSentence(inputTextarea, sentencePositionsOriginal[num - 1]);
+    }
+    if (num > 0 && num <= sentencePositionsTranslated.length && !isOriginal) {
+      scrollToSentence(translatedTextarea, sentencePositionsTranslated[num - 1]);
     }
   }
 
-  // Assigning handlers to the original text
-  outputOriginal.querySelectorAll('.sentence-num, .window').forEach((el) => {
-    el.style.cursor = 'pointer';
-    el.onclick = () => handleClick(el, sentencePositionsOriginal, inputTextarea);
-  });
-
-  // Assigning handlers to translated text
-  outputTranslated.querySelectorAll('.sentence-num, .window').forEach((el) => {
-    el.style.cursor = 'pointer';
-    el.onclick = () => handleClick(el, sentencePositionsTranslated, translatedTextarea);
+  // We attach handlers to both blocks - for the original and for the translation
+  [outputOriginal, outputTranslated].forEach(container => {
+    container.querySelectorAll('.sentence-num, .window').forEach(el => {
+      el.style.cursor = 'pointer';
+      el.onclick = () => handleClick(el);
+    });
   });
 }
 
 
-function render() {
+
+function getPresetDimensions(type) {
+  const presetId = `presetSize${type}`;
+  const widthId = `widthChars${type}`;
+  const heightId = `heightLines${type}`;
+  const charWidthId = `charWidth${type}`;
+  
+  const preset = document.getElementById(presetId).value;
   let width, height, charWidth;
-  const preset = document.getElementById('presetSize').value;
+  
   if (preset === 'fixed1') {
-	  width = 33;
-	  height = 3;
-	  charWidth = 9;
-	} else if (preset === 'fixed2') {
-	  width = 33;
-	  height = 12;
-	  charWidth = 9;
-	} else if (preset !== 'custom') {
-	  [width, height] = preset.split('x').map(n => +n);
-	  charWidth = 18;
-	} else {
-	  width = +document.getElementById('widthChars').value;
-	  height = +document.getElementById('heightLines').value;
-	  charWidth = 18;
-	}
-  document.getElementById('widthChars').value = width;
-  document.getElementById('heightLines').value = height;
-  document.getElementById('charWidth').value = charWidth;
-  const charW = +document.getElementById('charWidth').value;
+    width = 33;
+    height = 3;
+    charWidth = 9;
+  } else if (preset === 'fixed2') {
+    width = 33;
+    height = 12;
+    charWidth = 9;
+  } else if (preset !== 'custom') {
+    [width, height] = preset.split('x').map(n => +n);
+    charWidth = 18;
+  } else {
+    width = +document.getElementById(widthId).value;
+    height = +document.getElementById(heightId).value;
+    charWidth = +document.getElementById(charWidthId).value;
+  }
+
+  // Update the UI with resolved values
+  document.getElementById(widthId).value = width;
+  document.getElementById(heightId).value = height;
+  document.getElementById(charWidthId).value = charWidth;
+
+  return { width, height, charWidth };
+}
+
+function render() {
+  const { width: wO, height: hO, charWidth: cwO } = getPresetDimensions('Original');
+  const { width: wT, height: hT, charWidth: cwT } = getPresetDimensions('Translated');
   const charH = +document.getElementById('charHeight').value;
   const charF = +document.getElementById('charFont').value;
 
-  const statsIn = renderPreview('inputScript', 'outputOriginal', width, height, charW, charH, charF);
-  const statsTr = renderPreview('translatedScript', 'outputTranslated', width, height, charW, charH, charF);
+  const statsIn = renderPreview('inputScript', 'outputOriginal', wO, hO, cwO, charH, charF);
+  const statsTr = renderPreview('translatedScript', 'outputTranslated', wT, hT, cwT, charH, charF);
+  
   renderStats([statsIn, statsTr]);
 
-  // We attach clicks to outputOriginal after rendering
-  attachClickHandlers(width, height);
-  attachHoverHandlers()
+  attachClickHandlers(wO, hO);
+  attachHoverHandlers();
+
+  if (document.getElementById('autoAlign').checked) {
+    alignSentenceWindows(wO, hO, cwO, charH);
+  }
 }
 
-['inputScript', 'translatedScript', 'presetSize', 'widthChars', 'heightLines', 'charWidth', 'charHeight', 'charFont']
-  .forEach(id => document.getElementById(id).addEventListener('input', render));
+function alignSentenceWindows(width, height, charWidth, charH) {
+  const origContainer = document.getElementById('outputOriginal');
+  const transContainer = document.getElementById('outputTranslated');
+
+  // We collect for the container: map { sentenceNum → { label, windows: [div.window...] } }
+  function groupBySentence(container) {
+    const map = new Map();
+    let current = null;
+    container.childNodes.forEach(node => {
+      if (node.classList && node.classList.contains('sentence-num')) {
+        const num = parseInt(node.textContent.match(/Sentence (\d+)/)[1], 10);
+        map.set(num, { label: node, windows: [] });
+        current = num;
+      } else if (node.classList && node.classList.contains('window') && current !== null) {
+        map.get(current).windows.push(node);
+      }
+    });
+    return map;
+  }
+
+  const origMap = groupBySentence(origContainer);
+  const transMap = groupBySentence(transContainer);
+
+  // We collect all offer numbers
+  const allSentences = new Set([
+    ...origMap.keys(),
+    ...transMap.keys()
+  ]);
+
+  allSentences.forEach(num => {
+    const origEntry = origMap.get(num) || { label: null, windows: [] };
+    const trEntry   = transMap.get(num)  || { label: null, windows: [] };
+    const maxCnt = Math.max(origEntry.windows.length, trEntry.windows.length);
+
+    // we fill up to maxCnt with empty windows
+    function pad(entry, container) {
+      // where to insert: immediately after the last window of the current sentence
+      let ref = null;
+      if (entry.windows.length) {
+        ref = entry.windows[entry.windows.length - 1].nextSibling;
+      } else if (entry.label) {
+        ref = entry.label.nextSibling;
+      }
+      for (let i = entry.windows.length; i < maxCnt; i++) {
+        const emptyWin = document.createElement('div');
+        emptyWin.className = 'window empty-window';
+        emptyWin.style.width = width * charWidth + 8 + 'px';
+        emptyWin.style.height = height * charH + 8 + 'px';
+        container.insertBefore(emptyWin, ref);
+      }
+    }
+
+    pad(origEntry, origContainer);
+    pad(trEntry,   transContainer);
+  });
+}
+
+
+document.getElementById('renderBtn').addEventListener('click', render);
+
+['inputScript', 'translatedScript', 
+'presetSizeOriginal', 'presetSizeTranslated', 
+'widthCharsOriginal', 'heightLinesOriginal', 'charWidthOriginal', 
+'widthCharsTranslated', 'heightLinesTranslated', 'charWidthTranslated', 
+'charHeight', 'charFont', 'autoAlign', 'autoRender']
+  .forEach(id => {
+    document.getElementById(id).addEventListener('input', () => {
+      if (document.getElementById('autoRender').checked) render();
+    });
+  });
+
 render();
 
 function attachHoverHandlers() {
@@ -564,7 +768,7 @@ divider.addEventListener('mousedown', e => {
   document.body.style.userSelect = 'none'; // Disable text selection
 });
 
-document.addEventListener('mouseup', () => {
+divider.addEventListener('mouseup', e => {
   if (isDragging) {
     isDragging = false;
     document.body.style.cursor = '';
@@ -573,6 +777,6 @@ document.addEventListener('mouseup', () => {
 });
 
 
-  </script>
+</script>
 </body>
 </html>
