@@ -35,6 +35,14 @@ SIGNATURES_2 = {
     0x0024 : "tsq",
     0x0050 : "tod",
 }
+    
+def align_4(n):
+    """Rounding to the nearest higher multiple of 4"""
+    return (n + 3) & ~3
+    
+def align_sector(n):
+    """Round up to the nearest sector"""
+    return (n + SECTOR_SIZE - 1) // SECTOR_SIZE * SECTOR_SIZE
 
 def check_tim(data: bytes) -> bool:
     """
@@ -108,16 +116,6 @@ def check_archive(data):
             return False
     
     return True
-    
-
-def align_4(n):
-    """Rounding to the nearest higher multiple of 4"""
-    return (n + 3) & ~3
-    
- 
-def align_sector(n):
-    """Round up to the nearest sector"""
-    return (n + SECTOR_SIZE - 1) // SECTOR_SIZE * SECTOR_SIZE
 
 def check_tab_packed(data):
     return check_packed(data[4:]) and struct.unpack_from('<I', data, 0)[0] == 0

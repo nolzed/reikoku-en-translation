@@ -149,7 +149,7 @@ def build_dialog(data, font_map: FontMapper):
     # 4 bytes for block3_size, block3_size bytes,
     # plus add_block length
     main_size = (
-        4 + count1 * 2 + len(block1_align)
+        4 + count1 * 2
         + 4 + count2 * 2
         + 4 + block3_size
         #+ add_len
@@ -179,17 +179,12 @@ def build_dialog(data, font_map: FontMapper):
         out += struct.pack('<I', off)
     for packed in payload_bytes:
         out += packed
-        
-    print(len(out), len(out))
-    out += b'\00' * (len(out) % 2)
-    print(len(out))
     
-    out += b'\00' * 4
-    print(len(out))
     # Add extra block
+    out += b'\00' * (align_4(len(out)) - len(out))
+    out += b'\00' * 4
+    out += b'\00' * 8
     out += add_block_bytes
-    print(len(out))
-    
     return out
 
 def normalize_text(text):

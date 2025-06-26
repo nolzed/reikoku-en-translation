@@ -1,9 +1,54 @@
-import struct, argparse, json
+import struct, argparse, json, os
 
 from unpack_spirit import align_4
 from font_mapper import FontMapper
 
-def parse_dialog_text(text_bytes, font_map: FontMapper):
+import csv
+from openpyxl import Workbook
+from openpyxl.styles import Alignment
+
+# Excel export
+def export_to_csv(entries, filename):
+    with open(filename, mode='w', newline='', encoding='shift_jis', errors='replace') as file:
+        writer = csv.writer(file, quoting=csv.QUOTE_ALL)
+        for item in entries:
+            writer.writerow([item])
+            
+def export_to_excel(entries, filename, font_line_height=15):
+    wb = Workbook()
+    ws = wb.active
+
+    for idx, item in enumerate(entries, start=1):
+        cell = ws.cell(row=idx, column=1, value=item)
+        cell.alignment = Alignment(wrap_text=True, vertical='top')
+
+        # count the number of lines by \n
+        lines = item.count('\n') + 1
+
+        # Set the row height
+        ws.row_dimensions[idx].height = lines * font_line_height
+
+    wb.save(filename)
+
+def export_to_excel_escape(entries, filename, default_row_height=15):
+    wb = Workbook()
+    ws = wb.active
+
+    for idx, item in enumerate(entries, start=1):
+        # Escape line breaks \n -> \\n
+        escaped_text = item.replace('\n', '\\n')
+
+        cell = ws.cell(row=idx, column=1, value=escaped_text)
+        cell.alignment = Alignment(wrap_text=True, vertical='top')
+
+        # Set the standard row height
+        ws.row_dimensions[idx].height = default_row_height
+
+    wb.save(filename)
+
+
+# Script parsers
+def parse_script_text(text_bytes, font_map: FontMapper):
     i = 0
     output = []
 
@@ -116,78 +161,6 @@ def parse_dialog_text(text_bytes, font_map: FontMapper):
             
     return ''.join(output)
 
-def parse_scenario(data, font_map: FontMapper):
-    offset = 0
-    
-    data_1 = struct.unpack_from('<I', data, offset)[0]
-    offset += 4
-    
-    data_2 = struct.unpack_from('<I', data, offset)[0]
-    offset += 4
-    
-    entries_count_1 = struct.unpack_from('<I', data, offset)[0]
-    entries_count_1 += entries_count_1%2
-    offset += 4
-    print(f"Block 1 entries: {entries_count_1} | {hex(offset)}")
-    
-    block_3_size = struct.unpack_from('<I', data, offset)[0]
-    offset += 4
-    print(f"Block 3 size: {block_3_size} | {hex(offset)}")
-
-    entries_1 = []
-    for i in range(entries_count_1):
-        entry = struct.unpack_from('<H', data, offset + i*2)[0]
-        entries_1.append(entry)
-        
-    offset += entries_count_1 * 2
-    
-    table_size = struct.unpack_from('<I', data, offset)[0]
-    table_offsets_count = (table_size-4)//4
-    table_offsets = []
-    for i in range(table_offsets_count):
-        table_offset = struct.unpack_from('<I', data, offset + 4 + i*4)[0]
-        table_offsets.append(table_offset)
-    
-    print(f"Block 3 table_size: {table_size} | {hex(offset)}")
-    
-    table_entries = []
-    table_raw_entries = []
-    
-    for i in range(len(table_offsets)):
-        if i+1 < len(table_offsets):
-            size = table_offsets[i+1] - table_offsets[i]
-        else:
-            size = block_3_size - table_offsets[i]
-        entry_offset = offset + table_offsets[i]
-        table_entry = data[entry_offset:entry_offset+size]
-        table_raw_entries.append(table_entry.hex())
-        if struct.unpack_from("<H", table_entry, 0)[0] * 2 + 2 == len(table_entry):
-            table_entries.append(f"[RAW:{table_entry.hex()}]")
-        else:
-            table_entries.append(parse_dialog_text(table_entry, font_map))
-        
-    offset += block_3_size
-    
-    print(f"Block 3 table_entries: {len(table_entries)} | {hex(offset)}")
-    
-    return {
-        "data_1": data_1,
-        "data_2": data_2,
-        "block_1": {
-            "count": entries_count_1,
-            "entries": entries_1
-        },
-        "block_3": {
-            "size" : block_3_size,
-            "table_size" : table_size,
-            "table_offsets": table_offsets,
-            "table_entries": table_entries,
-            "raw_table_entries": table_raw_entries
-        },
-        "add_block": data[offset:].hex()
-    }
-    
-
 def parse_dialog(data, font_map: FontMapper):
     offset = 0
     
@@ -208,30 +181,28 @@ def parse_dialog(data, font_map: FontMapper):
     entries_count_2 = struct.unpack_from('<I', data, offset)[0] 
     entries_count_2 += entries_count_2%2
     offset += 4
+    print(f"Block 2 entries: {entries_count_2} | {hex(offset)}")
+
     entries_2 = []
-    print(entries_count_2)
     for i in range(entries_count_2):
         entry = struct.unpack_from('<H', data, offset + i*2)[0]
         entries_2.append(entry)
         
     offset += entries_count_2 * 2
-    print(f"Block 2 entries: {entries_count_2} | {hex(offset)}")
     
     block_3_size = struct.unpack_from('<I', data, offset)[0]
     offset += 4
-    
     print(f"Block 3 size: {block_3_size} | {hex(offset)}")
     
     table_size = struct.unpack_from('<I', data, offset)[0]
-    
+    print(f"Block 3 table_size: {table_size} | {hex(offset)}")
+
     table_offsets_count = (table_size-4)//4
     table_offsets = []
     for i in range(table_offsets_count):
         table_offset = struct.unpack_from('<I', data, offset + 4 + i*4)[0]
         table_offsets.append(table_offset)
-    
-    print(f"Block 3 table_size: {table_size} | {hex(offset)}")
-    
+
     table_entries = []
     table_raw_entries = []
     
@@ -246,11 +217,18 @@ def parse_dialog(data, font_map: FontMapper):
         if struct.unpack_from("<H", table_entry, 0)[0] * 2 + 2 == len(table_entry):
             table_entries.append(f"[RAW:{table_entry.hex()}]")
         else:
-            table_entries.append(parse_dialog_text(table_entry, font_map))
+            table_entries.append(parse_script_text(table_entry, font_map))
         
     offset += block_3_size
-    
     print(f"Block 3 table_entries: {len(table_entries)} | {hex(offset)}")
+    
+    remaining = data[offset:]
+    first_nonzero = next((i for i, b in enumerate(remaining) if b != 0x00), None)
+    
+    if first_nonzero is not None:
+        add_block_data = remaining[first_nonzero:].hex()
+    else:
+        add_block_data = ""
     
     return {
         "main_size": main_size,
@@ -269,82 +247,131 @@ def parse_dialog(data, font_map: FontMapper):
             "table_entries": table_entries,
             "raw_table_entries": table_raw_entries
         },
-        "add_block": data[offset:].hex()
+        "add_block": add_block_data
     }
 
-import csv
-def export_to_csv(entries, filename):
-    with open(filename, mode='w', newline='', encoding='shift_jis', errors='replace') as file:
-        writer = csv.writer(file, quoting=csv.QUOTE_ALL)
-        for item in entries:
-            writer.writerow([item])
-
-from openpyxl import Workbook
-from openpyxl.styles import Alignment
-
-def export_to_excel(entries, filename, font_line_height=15):
-    wb = Workbook()
-    ws = wb.active
-
-    for idx, item in enumerate(entries, start=1):
-        cell = ws.cell(row=idx, column=1, value=item)
-        cell.alignment = Alignment(wrap_text=True, vertical='top')
-
-        # count the number of lines by \n
-        lines = item.count('\n') + 1
-
-        # Set the row height
-        ws.row_dimensions[idx].height = lines * font_line_height
-
-    wb.save(filename)
-
-def export_to_excel_escape(entries, filename, default_row_height=15):
-    wb = Workbook()
-    ws = wb.active
-
-    for idx, item in enumerate(entries, start=1):
-        # Escape line breaks \n -> \\n
-        escaped_text = item.replace('\n', '\\n')
-
-        cell = ws.cell(row=idx, column=1, value=escaped_text)
-        cell.alignment = Alignment(wrap_text=True, vertical='top')
-
-        # Set the standard row height
-        ws.row_dimensions[idx].height = default_row_height
-
-    wb.save(filename)
+def parse_scenario(data, font_map: FontMapper):
+    offset = 0
     
+    data_1 = struct.unpack_from('<I', data, offset)[0]
+    offset += 4
+    
+    data_2 = struct.unpack_from('<I', data, offset)[0]
+    offset += 4
+    
+    entries_count_2 = struct.unpack_from('<I', data, offset)[0]
+    entries_count_2 += entries_count_2%2
+    offset += 4
+    print(f"Block 2 entries: {entries_count_2} | {hex(offset)}")
+    
+    entries_2 = []
+    for i in range(entries_count_2):
+        entry = struct.unpack_from('<H', data, offset + i*2)[0]
+        entries_2.append(entry)
+        
+    offset += entries_count_2 * 2
+    
+    block_3_size = struct.unpack_from('<I', data, offset)[0]
+    offset += 4
+    print(f"Block 3 size: {block_3_size} | {hex(offset)}")
+
+    table_size = struct.unpack_from('<I', data, offset)[0]
+    print(f"Block 3 table_size: {table_size} | {hex(offset)}")
+
+    table_offsets_count = (table_size-4)//4
+    table_offsets = []
+    for i in range(table_offsets_count):
+        table_offset = struct.unpack_from('<I', data, offset + 4 + i*4)[0]
+        table_offsets.append(table_offset)
+    
+    table_entries = []
+    table_raw_entries = []
+    for i in range(len(table_offsets)):
+        if i+1 < len(table_offsets):
+            size = table_offsets[i+1] - table_offsets[i]
+        else:
+            size = block_3_size - table_offsets[i] - 4
+            print("Size:", size, block_3_size, table_offsets[i])
+        entry_offset = offset + table_offsets[i]
+        table_entry = data[entry_offset:entry_offset+size]
+        table_raw_entries.append(table_entry.hex())
+        if struct.unpack_from("<H", table_entry, 0)[0] * 2 + 2 == len(table_entry):
+            table_entries.append(f"[RAW:{table_entry.hex()}]")
+        else:
+            table_entries.append(parse_script_text(table_entry, font_map))
+        
+    offset += block_3_size
+    print(f"Block 3 table_entries: {len(table_entries)} | {hex(offset)}")
+    
+    remaining = data[offset:]
+    first_nonzero = next((i for i, b in enumerate(remaining) if b != 0x00), None)
+    
+    if first_nonzero is not None:
+        add_block_data = remaining[first_nonzero:].hex()
+    else:
+        add_block_data = ""
+
+    return {
+        "data_1": data_1,
+        "data_2": data_2,
+        "block_2": {
+            "count": entries_count_2,
+            "entries": entries_2
+        },
+        "block_3": {
+            "size" : block_3_size,
+            "table_size" : table_size,
+            "table_offsets": table_offsets,
+            "table_entries": table_entries,
+            "raw_table_entries": table_raw_entries
+        },
+        "add_block": add_block_data
+    }
+
+def parse_database(data, font_map: FontMapper):
+    return {}
+
+from unpack_spirit import find_signature
+
 def main():
     parser = argparse.ArgumentParser(description="Parse script file")
-
-    parser.add_argument("file", help="Input dialog file")
-    parser.add_argument("dialog_data_out", help="Path to write parsed json data")
-    parser.add_argument("excel_out", help="Path to write excel entries")
-    
-    parser.add_argument(
-        "--font_table",
-        default="./font/font-table.txt",
-        help="Path to font-table.txt"
-    )
-    parser.add_argument(
-        "--ascii_table",
-        default="./font/ascii-table.bin",
-        help="Path to ascii-table.bin"
-    )
+    parser.add_argument("file", help="Input script file (.dialog/.scenario/.database)")
+    parser.add_argument("--json_out", help="Path to save parsed data (.json)")
+    parser.add_argument("--excel_out", help="Path to save Excel entries (.xlsx)")
+    parser.add_argument("--font_table", default="./font/font-table.txt", help="Path to font-table.txt")
+    parser.add_argument("--ascii_table", default="./font/ascii-table.bin", help="Path to ascii-table.bin")
     args = parser.parse_args()
-    
+
+    input_dir = os.path.dirname(args.file)
+    base_name = os.path.splitext(os.path.basename(args.file))[0]
+    if not args.json_out:
+        args.json_out = os.path.join(input_dir, base_name + ".json")
+    if not args.excel_out:
+        args.excel_out = os.path.join(input_dir, base_name + ".xlsx")
+
     with open(args.file, 'rb') as f1:
         data = f1.read()
 
-    dialog_data = parse_dialog(data, FontMapper(args.ascii_table, args.font_table)) # parse_scenario
-    
-    with open(args.dialog_data_out, 'w', encoding='utf-8') as out:
-        json.dump(dialog_data, out, indent=2, ensure_ascii=False)
-    
-    print("[+] Json dialog_data extracted to:", args.dialog_data_out)
+    script_type = find_signature(data)
+    if script_type not in ["dialog", "scenario", "database"]:
+        print("Wrong file type! Not .dialog/.scenario/.database")
+        return
 
-    export_to_excel_escape(dialog_data["block_3"]["table_entries"], args.excel_out)   
-    print("[+] Excel dialog_data entries extracted to:", args.excel_out)
-        
+    font_map = FontMapper(args.ascii_table, args.font_table)
+
+    if script_type == "dialog":
+        parsed_data = parse_dialog(data, font_map)
+    elif script_type == "scenario":
+        parsed_data = parse_scenario(data, font_map)
+    elif script_type == "database":
+        parsed_data = parse_database(data, font_map)
+
+    with open(args.json_out, 'w', encoding='utf-8') as out:
+        json.dump(parsed_data, out, indent=2, ensure_ascii=False)
+    print("[+] JSON saved to:", args.json_out)
+
+    export_to_excel_escape(parsed_data["block_3"]["table_entries"], args.excel_out)
+    print("[+] Excel saved to:", args.excel_out)
+
 if __name__ == '__main__':
     main()
