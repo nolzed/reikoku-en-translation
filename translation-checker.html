@@ -524,7 +524,6 @@ function getSentencePositions(text) {
 function scrollToSentence(textarea, pos) {
   const value = textarea.value;
 
-<<<<<<< HEAD
   // Find the beginning of the string (the first \n before the position or 0)
   let start = value.lastIndexOf('\n', pos - 1);
   start = start === -1 ? 0 : start + 1;
@@ -539,22 +538,6 @@ function scrollToSentence(textarea, pos) {
 
   // Let's scroll the textarea so that the cursor is in the center
   // Create a temporary hidden div with the same styles to measure the line position
-=======
-  // Найдём начало строки (первый \n перед позицией или 0)
-  let start = value.lastIndexOf('\n', pos - 1);
-  start = start === -1 ? 0 : start + 1;
-
-  // Найдём конец строки (первый \n после позиции или конец текста)
-  let end = value.indexOf('\n', pos);
-  end = end === -1 ? value.length : end;
-
-  // Установим выделение всей строки
-  textarea.focus();
-  textarea.setSelectionRange(start, end); // (start, start) для перенесения курсора
-
-  // Прокрутим textarea так, чтобы курсор оказался в центре
-  // Создаём временный hidden div с теми же стилями, чтобы измерить позицию строки
->>>>>>> 8753994e7d9e9abfe1c34419126e200207f96655
   const beforeText = value.slice(0, start);
   const linesBefore = beforeText.split('\n').length - 1;
 
@@ -578,11 +561,7 @@ function attachClickHandlers(width, height) {
 
   function getSentenceNumFromElement(el) {
     let target = el;
-<<<<<<< HEAD
     // If it is a window, we look for the previous element with the sentence number
-=======
-    // Если это окно, ищем предыдущий элемент с номером предложения
->>>>>>> 8753994e7d9e9abfe1c34419126e200207f96655
     if (el.classList.contains('window')) {
       target = el.previousElementSibling;
       while (target && !target.classList.contains('sentence-num')) {
@@ -602,17 +581,10 @@ function attachClickHandlers(width, height) {
     const num = getSentenceNumFromElement(el);
     if (num === null) return;
 
-<<<<<<< HEAD
     // We determine which block was clicked - the original or the translation
     const isOriginal = el.closest('#outputOriginal') !== null;
 
     // First, select in another textarea (without focus)
-=======
-    // Определяем, в каком блоке кликнули — оригинал или перевод
-    const isOriginal = el.closest('#outputOriginal') !== null;
-
-    // Сначала выделяем в другом textarea (без фокуса)
->>>>>>> 8753994e7d9e9abfe1c34419126e200207f96655
     if (num > 0 && num <= sentencePositionsOriginal.length && !isOriginal) {
       scrollToSentence(inputTextarea, sentencePositionsOriginal[num - 1]);
     }
@@ -620,11 +592,7 @@ function attachClickHandlers(width, height) {
       scrollToSentence(translatedTextarea, sentencePositionsTranslated[num - 1]);
     }
 
-<<<<<<< HEAD
     // Then we select in the textarea where the click was (with focus)
-=======
-    // Потом выделяем в textarea, где был клик (с фокусом)
->>>>>>> 8753994e7d9e9abfe1c34419126e200207f96655
     if (num > 0 && num <= sentencePositionsOriginal.length && isOriginal) {
       scrollToSentence(inputTextarea, sentencePositionsOriginal[num - 1]);
     }
@@ -633,12 +601,7 @@ function attachClickHandlers(width, height) {
     }
   }
 
-<<<<<<< HEAD
   // We attach handlers to both blocks - for the original and for the translation
-=======
-
-  // Вешаем обработчики на оба блока — и для оригинала, и для перевода
->>>>>>> 8753994e7d9e9abfe1c34419126e200207f96655
   [outputOriginal, outputTranslated].forEach(container => {
     container.querySelectorAll('.sentence-num, .window').forEach(el => {
       el.style.cursor = 'pointer';
@@ -702,22 +665,11 @@ function render() {
   }
 }
 
-<<<<<<< HEAD
-=======
-
-// CSS: сделайте пустые окна невидимыми, но они займут место в потоке
-// .empty-window { visibility: hidden; }
-
->>>>>>> 8753994e7d9e9abfe1c34419126e200207f96655
 function alignSentenceWindows(width, height, charWidth, charH) {
   const origContainer = document.getElementById('outputOriginal');
   const transContainer = document.getElementById('outputTranslated');
 
-<<<<<<< HEAD
   // We collect for the container: map { sentenceNum → { label, windows: [div.window...] } }
-=======
-  // Собираем для контейнера: map { sentenceNum → { label, windows: [div.window...] } }
->>>>>>> 8753994e7d9e9abfe1c34419126e200207f96655
   function groupBySentence(container) {
     const map = new Map();
     let current = null;
@@ -736,11 +688,7 @@ function alignSentenceWindows(width, height, charWidth, charH) {
   const origMap = groupBySentence(origContainer);
   const transMap = groupBySentence(transContainer);
 
-<<<<<<< HEAD
   // We collect all offer numbers
-=======
-  // Собираем все номера предложений
->>>>>>> 8753994e7d9e9abfe1c34419126e200207f96655
   const allSentences = new Set([
     ...origMap.keys(),
     ...transMap.keys()
@@ -751,15 +699,9 @@ function alignSentenceWindows(width, height, charWidth, charH) {
     const trEntry   = transMap.get(num)  || { label: null, windows: [] };
     const maxCnt = Math.max(origEntry.windows.length, trEntry.windows.length);
 
-<<<<<<< HEAD
     // we fill up to maxCnt with empty windows
     function pad(entry, container) {
       // where to insert: immediately after the last window of the current sentence
-=======
-    // дополняем до maxCnt пустыми окнами
-    function pad(entry, container) {
-      // где вставлять: сразу после последнего окна текущего предложения
->>>>>>> 8753994e7d9e9abfe1c34419126e200207f96655
       let ref = null;
       if (entry.windows.length) {
         ref = entry.windows[entry.windows.length - 1].nextSibling;
