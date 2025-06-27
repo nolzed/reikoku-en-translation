@@ -1,11 +1,53 @@
 import struct
 import argparse
 import json
+from openpyxl import load_workbook
 
 from font_mapper import FontMapper
 from unpack_spirit import align_4
 
-def pack_dialog_text(text, font_map: FontMapper):
+def normalize_text(text):
+    replacements = {
+        '?': '？',
+        '!': '！',
+        ',': '，',
+        '.': '．',
+        '"': '”',
+        "'": '”',
+        ":": '：',
+        # ':': '：',
+        # ';': '；',
+        # '(': '（',
+        # ')': '）',
+        # '[': '［',
+        # ']': '］',
+        # '{': '｛',
+        # '}': '｝',
+        # '<': '＜',
+        # '>': '＞',
+        # '/': '／',
+        # '\\': '＼',
+        # '|': '｜',
+        # '*': '＊',
+        
+        # '\'': '＇',
+        # '`': '｀',
+        # '~': '～',
+        # '&': '＆',
+        # '#': '＃',
+        # '%': '％',
+        # '^': '＾',
+        # '+': '＋',
+        # '=': '＝',
+        # '-': '－',
+        # '_': '＿',
+        # '@': '＠',
+        # '$': '＄',
+    }
+
+    return ''.join(replacements.get(c, c) for c in text)
+
+def pack_script_text(text, font_map: FontMapper):
     """
     Packs a string with control tokens back into a sequence of bytes.
     """
@@ -130,7 +172,7 @@ def build_dialog(data, font_map: FontMapper):
     payload_bytes = []
     for entry in table_entries:
         offsets.append(current)
-        packed = pack_dialog_text(entry, font_map)
+        packed = pack_script_text(entry, font_map)
         payload_bytes.append(packed)
         current += len(packed)
     
@@ -141,18 +183,15 @@ def build_dialog(data, font_map: FontMapper):
 
     # extra add_block bytes
     add_block_bytes = bytes.fromhex(data.get('add_block', ''))
-    add_len = len(add_block_bytes)
     
     # Main size: sum of all parts after this field
     # 4 bytes for count1, count1*2 bytes entries,
     # 4 bytes for count2, count2*2 bytes entries,
     # 4 bytes for block3_size, block3_size bytes,
-    # plus add_block length
     main_size = (
         4 + count1 * 2
         + 4 + count2 * 2
         + 4 + block3_size
-        #+ add_len
     )
     out += struct.pack('<I', main_size)
     
@@ -187,49 +226,84 @@ def build_dialog(data, font_map: FontMapper):
     out += add_block_bytes
     return out
 
-def normalize_text(text):
-    replacements = {
-        '?': '？',
-        '!': '！',
-        ',': '，',
-        '.': '．',
-        '"': '”',
-        "'": '”',
-        ":": '：',
-        # ':': '：',
-        # ';': '；',
-        # '(': '（',
-        # ')': '）',
-        # '[': '［',
-        # ']': '］',
-        # '{': '｛',
-        # '}': '｝',
-        # '<': '＜',
-        # '>': '＞',
-        # '/': '／',
-        # '\\': '＼',
-        # '|': '｜',
-        # '*': '＊',
-        
-        # '\'': '＇',
-        # '`': '｀',
-        # '~': '～',
-        # '&': '＆',
-        # '#': '＃',
-        # '%': '％',
-        # '^': '＾',
-        # '+': '＋',
-        # '=': '＝',
-        # '-': '－',
-        # '_': '＿',
-        # '@': '＠',
-        # '$': '＄',
-    }
+def build_scenario(data, font_map: FontMapper):
+    out = bytearray()
+    
+    # Write data_1 and data_2
+    data_1 = data.get('data_1', 0)
+    data_2 = data.get('data_2', 0)
+    
+    out += struct.pack('<I', data_1)
+    out += struct.pack('<I', data_2)
+    
+    # Block 2: count entries, drop trailing 0 if есть
+    entries2 = data['block_2']['entries']
+    count2 = len(entries2) - 1 if entries2 and entries2[-1] == 0 else len(entries2)
+    
+    block2_align = b''
+    if (count2 * 2) % 4 != 0:
+        block2_align = b'\x00' * (4 - (count2 * 2) % 4)
+    
+    out += struct.pack('<I', count2)
+    for val in entries2[:count2]:
+        out += struct.pack('<H', val)
+    out += block2_align
+    
+    # Block 3: calculate offsets and sizes
+    table_entries = data['block_3']['table_entries']
+    n = len(table_entries)
+    
+    base_offset = 4 + 4 * n  # 4 bytes for table_size + n*4 bytes for offsets
+    offsets = []
+    current = base_offset
+    payload_bytes = []
+    for entry in table_entries:
+        offsets.append(current)
+        packed = pack_script_text(entry, font_map)
+        payload_bytes.append(packed)
+        current += len(packed)
+    
+    table_size = 4 + 4 * n
+    payload_len = sum(len(p) for p in payload_bytes)
+    block3_size = table_size + payload_len + 4  # +4 bytes for block3_size itself
+    
+    # Write data
+    out += struct.pack('<I', block3_size)
+    out += struct.pack('<I', table_size)
+    for off in offsets:
+        out += struct.pack('<I', off)
+    for packed in payload_bytes:
+        out += packed
+    
+    # add_block empty data
+    out += b'\x00' * 4
+    return out
 
-    return ''.join(replacements.get(c, c) for c in text)
+def build_database(data, font_map: FontMapper):
+    ...
 
+def fix_script_dialog_window(data):
+    fixed_entries = data
+    for i in range(len(data)):
 
-from openpyxl import load_workbook
+        if data[i:i+4] == [0x00AA, 0x0029, 0x0005, 0x0018]:
+            #script_data["entries"][i-1] = param_1  # 0x05
+            #script_data["entries"][i-3] = param_2  # 0x00
+            #script_data["entries"][i-5] = param_3  # Frame height (rows)
+            #script_data["entries"][i-7] = param_4  # Frame width (cols)
+            #script_data["entries"][i-9] = param_5  # Frame Y pos
+            #script_data["entries"][i-11] = param_6 # Frame X pos
+            
+            columns = data[i-7]
+            if columns == 0x0013:
+                fix_columns = 0x0021
+            elif columns == 0x000f:
+                fix_columns = 0x001a
+            else:
+                raise Exception(f"Unknown column count: {columns} | {data[i-11:i+4]}")
+            fixed_entries[i-7] = fix_columns
+            
+    return fixed_entries
 
 def import_from_excel_unescape(filename):
     wb = load_workbook(filename)
@@ -244,41 +318,41 @@ def import_from_excel_unescape(filename):
             entries.append(unescaped_text)
 
     return entries
-    
-   
+
 def main():
-    parser = argparse.ArgumentParser(description="Pack JSON dialog into binary format")
-    parser.add_argument("infile", help="Input JSON file with dialog structure")
-    parser.add_argument("outfile", help="Output binary dialog file")
-    parser.add_argument("--excel", help="Path to excel text entries", required=False)
-    parser.add_argument(
-        "--font_table",
-        default="./font/font-table.txt",
-        help="Path to font-table.txt"
-    )
-    parser.add_argument(
-        "--ascii_table",
-        default="./font/ascii-table.bin",
-        help="Path to ascii-table.bin"
-    )
+    parser = argparse.ArgumentParser(description="Pack JSON script into game format")
+    parser.add_argument("input_json", help="Input JSON file with script structure")
+    parser.add_argument("out_file", help="Output script file")
+    parser.add_argument("--excel", help="Path to excel text entries")
+    parser.add_argument("--fixes", help="Apply various font fixes to the scripts", action="store_true")
+    parser.add_argument("--font_table", default="./font/font-table.txt", help="Path to font-table.txt")
+    parser.add_argument("--ascii_table", default="./font/ascii-table.bin", help="Path to ascii-table.bin")
     args = parser.parse_args()
 
     # Load JSON
-    with open(args.infile, 'r', encoding='utf-8') as f:
+    with open(args.input_json, 'r', encoding='utf-8') as f:
         data = json.load(f)
     
     # Load and insert excel entries
     if args.excel:
         data['block_3']['table_entries'] = import_from_excel_unescape(args.excel)
     
+    if args.fixes:
+        data["block_2"]["entries"] = fix_script_dialog_window(data["block_2"]["entries"])
+
     # Build binary
-    bin_data = build_dialog(data, FontMapper(args.ascii_table, args.font_table))
+    if data["script"] == "dialog":
+        bin_data = build_dialog(data, FontMapper(args.ascii_table, args.font_table))
+    elif data["script"] == "scenario":
+        bin_data = build_scenario(data, FontMapper(args.ascii_table, args.font_table))
+    elif data["script"] == "database":
+        bin_data = build_database(data, FontMapper(args.ascii_table, args.font_table))
 
     # Write
-    with open(args.outfile, 'wb') as f:
+    with open(args.out_file, 'wb') as f:
         f.write(bin_data)
 
-    print(f"[+] Binary dialog written to: {args.outfile}")
+    print(f"[+] Script file written to: {args.out_file}")
 
 
 if __name__ == '__main__':

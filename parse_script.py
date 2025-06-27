@@ -231,6 +231,7 @@ def parse_dialog(data, font_map: FontMapper):
         add_block_data = ""
     
     return {
+        "script": "dialog",
         "main_size": main_size,
         "block_1": {
             "count": entries_count_1,
@@ -312,6 +313,7 @@ def parse_scenario(data, font_map: FontMapper):
         add_block_data = ""
 
     return {
+        "script": "scenario",
         "data_1": data_1,
         "data_2": data_2,
         "block_2": {

@@ -4,27 +4,7 @@ import argparse
 import struct
 import json
 
-def align_4(n):
-    """Aligns the given number up to the next multiple of 4."""
-    return (n + 3) & ~3
-
-def align_sector(n, sector_size=2048):
-    """Aligns the given number up to the next multiple of the sector size."""
-    return (n + sector_size - 1) // sector_size * sector_size
-
-TYPE_WITH_FILES = {"archive", "packed", "map"}
-
-def get_file_format(entry):
-    file_format = entry["type"]
-    if file_format == "file":
-        return ".bin"
-    if file_format == "archive":
-        return ".archive"
-    if file_format == "packed":
-        return ".packed"
-    if file_format == "map":
-        return ".map"
-    return "." + file_format
+from unpack_spirit import align_4, align_sector, get_file_format, TYPE_WITH_FILES
 
 def rebuild_packed_data(entry_info, base_source_dir):
     """
