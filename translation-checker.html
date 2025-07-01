@@ -152,6 +152,7 @@
               <option value="19x3">Dialogue</option>
               <option value="19x12">High Dialogue</option>
               <option value="19x10">Database</option>
+			  <option value="19x5">Note</option>
               <option value="custom">Custom</option>
           </select>
           </label>
@@ -167,6 +168,7 @@
               <option value="fixed1">Dialogue</option>
               <option value="fixed2">High Dialogue</option>
               <option value="19x10">Database</option>
+			  <option value="19x5">Note</option>
               <option value="custom">Custom</option>
             </select>
           </label>
@@ -255,6 +257,7 @@ function buildWindows(parsed, width, height) {
     if (parsed.startsWith('{CLEAR}', i) || parsed.startsWith('{END}', i)) {
       segments.push(buffer);
       buffer = '';
+      i += parsed.startsWith('{END}', i) ? 5 : 3;
       i += parsed.startsWith('{CLEAR}', i) ? 7 : 5;
     } else buffer += parsed[i++];
   }

@@ -6,6 +6,7 @@ from font_mapper import FontMapper
 import csv
 from openpyxl import Workbook
 from openpyxl.styles import Alignment
+from unpack_spirit import find_signature
 
 # Excel export
 def export_to_csv(entries, filename):
@@ -330,14 +331,9 @@ def parse_scenario(data, font_map: FontMapper):
         "add_block": add_block_data
     }
 
-def parse_database(data, font_map: FontMapper):
-    return {}
-
-from unpack_spirit import find_signature
-
 def main():
     parser = argparse.ArgumentParser(description="Parse script file")
-    parser.add_argument("file", help="Input script file (.dialog/.scenario/.database)")
+    parser.add_argument("file", help="Input script file (.dialog/.scenario)")
     parser.add_argument("--json_out", help="Path to save parsed data (.json)")
     parser.add_argument("--excel_out", help="Path to save Excel entries (.xlsx)")
     parser.add_argument("--font_table", default="./font/font-table.txt", help="Path to font-table.txt")
@@ -355,8 +351,8 @@ def main():
         data = f1.read()
 
     script_type = find_signature(data)
-    if script_type not in ["dialog", "scenario", "database"]:
-        print("Wrong file type! Not .dialog/.scenario/.database")
+    if script_type not in ["dialog", "scenario"]:
+        print("Wrong file type! Not .dialog/.scenario")
         return
 
     font_map = FontMapper(args.ascii_table, args.font_table)
@@ -365,8 +361,6 @@ def main():
         parsed_data = parse_dialog(data, font_map)
     elif script_type == "scenario":
         parsed_data = parse_scenario(data, font_map)
-    elif script_type == "database":
-        parsed_data = parse_database(data, font_map)
 
     with open(args.json_out, 'w', encoding='utf-8') as out:
         json.dump(parsed_data, out, indent=2, ensure_ascii=False)

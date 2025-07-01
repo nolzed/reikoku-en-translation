@@ -15,10 +15,10 @@ def normalize_text(text):
         '"': '”',
         "'": '”',
         ":": '：',
+        '(': '（',
+        ')': '）',
         # ':': '：',
         # ';': '；',
-        # '(': '（',
-        # ')': '）',
         # '[': '［',
         # ']': '］',
         # '{': '｛',
@@ -279,9 +279,6 @@ def build_scenario(data, font_map: FontMapper):
     out += b'\x00' * 4
     return out
 
-def build_database(data, font_map: FontMapper):
-    ...
-
 def fix_script_dialog_window(data):
     fixed_entries = data
     for i in range(len(data)):
@@ -321,7 +318,7 @@ def import_from_excel_unescape(filename):
 
 def main():
     parser = argparse.ArgumentParser(description="Pack JSON script into game format")
-    parser.add_argument("input_json", help="Input JSON file with script structure")
+    parser.add_argument("input_json", help="Input JSON file with script structure (dialog/scenario)")
     parser.add_argument("out_file", help="Output script file")
     parser.add_argument("--excel", help="Path to excel text entries")
     parser.add_argument("--fixes", help="Apply various font fixes to the scripts", action="store_true")
@@ -345,8 +342,6 @@ def main():
         bin_data = build_dialog(data, FontMapper(args.ascii_table, args.font_table))
     elif data["script"] == "scenario":
         bin_data = build_scenario(data, FontMapper(args.ascii_table, args.font_table))
-    elif data["script"] == "database":
-        bin_data = build_database(data, FontMapper(args.ascii_table, args.font_table))
 
     # Write
     with open(args.out_file, 'wb') as f:

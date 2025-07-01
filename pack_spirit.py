@@ -246,7 +246,7 @@ def repack_spirit(spirit_dir, output_spirit, slpm_file, output_slpm):
                 entry_data = f.read()
 
         rebuilt_entry_length = len(entry_data)
-        actual_sector_size = align_sector(rebuilt_entry_length, 2048)
+        actual_sector_size = align_sector(rebuilt_entry_length)
 
         # Padding
         entry_data += b'\x00' * (actual_sector_size - rebuilt_entry_length)
