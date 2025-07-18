@@ -125,10 +125,116 @@
 
   <div class="container">
     <div id="leftPane" class="pane" style="flex: 1;">
-      <h3>Original Script</h3>
+
+      <!-- Original script -->
+      <div style="display: flex; justify-content: space-between;">
+        <h3>Original Script</h3>
+        <div style="display: flex; align-items: center;"> 
+          <p>Keywords List:</p>
+          <button class="toggleKeywordsBtn" data-target="keywordContainerOriginal" style="margin-left: 5px;">Show</button>
+        </div>
+      </div>
+      <div id="keywordContainerOriginal" style="display:none; margin-bottom: 10px; margin-left: auto;">
+        <textarea id="keywordDictOriginal" rows="10" cols="40" placeholder="Enter keywords list, one per line">
+アヴァダーナ[END]
+悪魔の苗領[END]
+アダムとイブ[END]
+アニミズム[END]
+アヌビス[END]
+阿募[END]
+アブダクション[END]
+アフラ・マズダ[END]
+アブラハム[END]
+アミティヴィル[END]
+アムシャ・スプンタ[END]
+アメミット[END]
+アンリ・マンユ[END]
+インセンス[END]
+インドラ[END]
+ヴィシュヌ[END]
+氏神[END]
+ウロボロスの蛇[END]
+オージン[END]
+オシリス[END]
+陰陽五行の祖生と祖剋[END]
+陰陽道[END]
+カイン[END]
+型霊[END]
+カバラ[END]
+観測者効果[END]
+叫喚[END]
+教令輪身[END]
+巨人族[END]
+結跏趺坐[END]
+ゲルグ旅[END]
+ゲルマン人やノルマン人[END]
+高野山[END]
+累縄[END]
+蠱毒[END]
+胡粉[END]
+御幣[END]
+全剛界[END]
+シヴァ[END]
+四国八十八ヶ所[END]
+使徒[END]
+ジプシー[END]
+下総国豊田郡[END]
+シャーリー・マクレーン[END]
+衆合[END]
+巡行透视[END]
+浄土真宗[END]
+焦熱[END]
+人智学[END]
+スェデンボルイ[END]
+スフィンクスの前脚の問の害字板[END]
+セラピー[END]
+大叫喚[END]
+大焦熱[END]
+胎蔵界[END]
+ダンテの『神曲』[END]
+竿浴[END]
+トーテム[END]
+ニューエイジ[END]
+涅槃[END]
+ノアの箱舟[END]
+八卦[END]
+バベルの塔[END]
+バラモン教[END]
+ブラフマー[END]
+プロテスタント[END]
+忘却の川[END]
+ボシュ[END]
+善提心[END]
+マナス界[END]
+禊[END]
+メスメリスト[END]
+メンタル体[END]
+ヤザタ[END]
+ヤマ天[END]
+ヨガ[END]
+ヨセフ[END]
+ヨハネ[END]
+六道[END]
+録全術[END]
+脇侍[END]
+ワルハラ[END]
+        </textarea><br>
+      </div>
       <textarea id="inputScript" placeholder="Enter original script..."></textarea>
-      <h3>Translation</h3>
+
+      <!-- Translation script -->
+      <div style="display: flex; justify-content: space-between; ">
+        <h3>Translation</h3>
+        <div style="display: flex; align-items: center;"> 
+          <p>Keywords List:</p>
+          <button class="toggleKeywordsBtn" data-target="keywordContainerTranslated" style="margin-left: 5px;">Show</button>
+        </div>
+      </div>
+      <div id="keywordContainerTranslated" style="display:none; margin-bottom: 10px; margin-left: auto;">
+        <textarea id="keywordDictTranslated" rows="10" cols="40" placeholder="Enter keywords list, one per line"></textarea><br>
+      </div>
       <textarea id="translatedScript" placeholder="Enter translated script..."></textarea>
+      
       <div class="controls">
         <label>Font Size (px):<input type="number" id="charFont" value="16" min="1"></label>
         <label>Char Height (px):<input type="number" id="charHeight" value="20" min="1"></label>
@@ -149,10 +255,10 @@
         <div class="controls controls-presets original-preset">
           <label>Original Preset:
             <select id="presetSizeOriginal">
-              <option value="19x3">Dialogue</option>
-              <option value="19x12">High Dialogue</option>
-              <option value="19x10">Database</option>
-			  <option value="19x5">Note</option>
+              <option value="dial1">Dialogue</option>
+              <option value="dial2">High Dialogue</option>
+              <option value="db" selected>Database</option>
+			        <option value="note">Note</option>
               <option value="custom">Custom</option>
           </select>
           </label>
@@ -165,10 +271,10 @@
         <div class="controls controls-presets transition-preset">
           <label>Translation Preset:
             <select id="presetSizeTranslated">
-              <option value="fixed1">Dialogue</option>
-              <option value="fixed2">High Dialogue</option>
-              <option value="19x10">Database</option>
-			  <option value="19x5">Note</option>
+              <option value="dial1fix">Dialogue</option>
+              <option value="dial2fix">High Dialogue</option>
+              <option value="dbfix" selected>Database</option>
+			        <option value="notefix">Note</option>
               <option value="custom">Custom</option>
             </select>
           </label>
@@ -185,6 +291,62 @@
     </div>
   </div>
 <script>
+
+
+  // Show/Hide switcher
+  function toggleContainer(targetId, btn) {
+    const container = document.getElementById(targetId);
+    if (container.style.display === 'none' || container.style.display === '') {
+      container.style.display = 'block';
+      btn.textContent = 'Hide';
+    } else {
+      container.style.display = 'none';
+      btn.textContent = 'Show';
+    }
+  }
+
+  // Show/Hide handler
+  document.querySelectorAll('.toggleKeywordsBtn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      toggleContainer(btn.dataset.target, btn);
+    });
+  });
+
+  const keywordMap = {1: 99, 2: 83, 3: 119, 4: 117, 5: 85, 6: 161, 7: 128, 8: 162, 9: 141, 10: 111, 11: 91, 13: 90, 14: 110, 15: 149, 16: 89, 17: 116, 18: 153, 19: 159, 20: 96, 21: 95, 22: 84, 23: 157, 24: 100, 25: 138, 26: 104, 27: 124, 28: 106, 29: 112, 31: 152, 32: 163, 33: 109, 34: 156, 35: 97, 36: 102, 37: 132, 38: 147, 39: 113, 40: 107, 42: 98, 43: 86, 44: 120, 45: 93, 46: 101, 47: 121, 48: 136, 49: 92, 50: 125, 51: 127, 52: 130, 53: 131, 54: 143, 55: 88, 56: 137, 57: 115, 58: 150, 59: 155, 60: 103, 61: 118, 62: 139, 63: 82, 64: 148, 65: 122, 66: 105, 67: 145, 68: 154, 69: 158, 70: 123, 72: 134, 73: 129, 74: 133, 75: 126, 76: 160, 77: 144, 78: 142, 79: 140, 80: 151, 81: 94};
+
+  // Get keywords list
+  function getKeywordsDict(textareaId) {
+    const raw = document.getElementById(textareaId).value.trim();
+    
+    if (!raw) return {};
+
+    const lines = raw.split('\n').map(line => line.trim()).filter(Boolean);
+    const dict = {};
+
+    let i = 0;
+    for (let line of lines) {
+      const val = keywordMap[i];
+      if (val !== undefined) {
+        const key = `(${i},0,${val})`;
+        line = line.replace(/\[END\]/g, '');
+        dict[key] = line;
+      }
+      i++;
+    }
+
+    return dict;
+  }
+
+let keywordDictOriginal = getKeywordsDict('keywordDictOriginal');
+let keywordDictTranslated = getKeywordsDict('keywordDictTranslated');
+
+document.getElementById('keywordDictOriginal').addEventListener('input', e => {
+  keywordDictOriginal = getKeywordsDict('keywordDictOriginal');
+});
+
+document.getElementById('keywordDictTranslated').addEventListener('input', e => {
+  keywordDictTranslated = getKeywordsDict('keywordDictTranslated');
+});
 
 const divider = document.getElementById('divider');
 const leftPane = document.getElementById('leftPane');
@@ -209,33 +371,117 @@ function countCommands(text, cmd) {
   return (text.match(regex) || []).length;
 }
 
-function parseScript(text) {
+const colorPalette = {
+  0: '#000000',  // black
+  1: '#FFFFFF',  // white
+  2: '#FF0000',  // red
+  3: '#00FF00',  // green
+  4: '#00FFFF',  // cyan
+  5: '#FFFF00',  // yellow
+  6: '#0000FF',  // blue
+  7: '#FF00FF',  // magenta
+  8: '#888888',
+  9: '#444444',
+  10: '#AAAAAA',
+  11: '#880000',
+  12: '#008800',
+  13: '#000088',
+  14: '#888800',
+  15: '#008888'
+};
+
+function parseScript(text, keywordDict, foldedBreaks = false) {
   let tokens = [], i = 0;
   let lastWasNewline = false;
+  let currentColor = 0;
+  let underline = false;
 
   while (i < text.length) {
     if (text[i] === '[') {
-      const m = text.slice(i).match(/^\[([A-Z_0-9:]+)\]/);
-      if (m) {
-        const name = m[1], full = m[0];
-        if (name.startsWith('SP:')) tokens.push(' '.repeat(+name.split(':')[1]));
-        else if (/^(FUNC_ID|DELAY|WAIT_2|FUNC_ADR)/.test(name)) { }
-        else if (name === 'WAIT_1') {
-          if (!lastWasNewline) {
-            tokens.push('\n');
-            lastWasNewline = true;
-          }
+      const slice = text.slice(i);
+	
+	  if (/^\[RAW:[^\]]+\]/.test(slice)) {
+        const match = slice.match(/^\[RAW:[^\]]+\]/);
+        i += match[0].length;
+        continue;
+      }
+	  
+      if (/^\[CLUT:(\d+)\]/.test(slice)) {
+        const match = slice.match(/^\[CLUT:(\d+)\]/);
+        currentColor = +match[1];
+        tokens.push(`{CLUT:${currentColor}}`);
+        i += match[0].length;
+        continue;
+      }
+
+      if (/^\[IMG:\(([^)]+)\)\]/.test(slice)) {
+        i += slice.match(/^\[IMG:\(([^)]+)\)\]/)[0].length;
+        continue; // ignore image
+      }
+
+      if (/^\[KEYWORD:\(([^)]+)\)\]/.test(slice)) {
+        const match = slice.match(/^\[KEYWORD:\(([^)]+)\)\]/);
+        const key = `(${match[1]})`;
+        tokens.push(keywordDict[key] || '??KEYWORD??');
+        i += match[0].length;
+        continue;
+      }
+
+      if (/^\[END_PAGE\]/.test(slice)) {
+        tokens.push('{END_PAGE}');
+        i += '[END_PAGE]'.length;
+        continue;
+      }
+
+      if (/^\[LINE\]/.test(slice)) {
+        underline = !underline;
+        tokens.push(`{LINE:${underline ? 1 : 0}}`);
+        i += '[LINE]'.length;
+        continue;
+      }
+
+      if (/^\[WAIT_1\]/.test(slice)) {
+        if (!lastWasNewline) {
+          tokens.push('\n');
+          lastWasNewline = true;
         }
-        else if (name === 'CLEAR') tokens.push('{CLEAR}');
-        else if (name === 'INTEND') tokens.push('{INTEND}');
-        else if (name === 'END') tokens.push('{END}');
-        i += full.length;
+        i += '[WAIT_1]'.length;
+        continue;
+      }
+
+      if (/^\[SP:(\d+)\]/.test(slice)) {
+        const match = slice.match(/^\[SP:(\d+)\]/);
+        tokens.push(' '.repeat(+match[1]));
+        i += match[0].length;
+        continue;
+      }
+
+      if (/^\[(FUNC_ID|FUNC_ADR|DELAY|WAIT_2)\]/.test(slice)) {
+        i += slice.match(/^\[(FUNC_ID|FUNC_ADR|DELAY|WAIT_2)\]/)[0].length;
+        continue;
+      }
+
+      if (/^\[CLEAR\]/.test(slice)) {
+        tokens.push('{CLEAR}');
+        i += '[CLEAR]'.length;
+        continue;
+      }
+
+      if (/^\[INTEND\]/.test(slice)) {
+        tokens.push('{INTEND}');
+        i += '[INTEND]'.length;
+        continue;
+      }
+
+      if (/^\[END\]/.test(slice)) {
+        tokens.push('{END}');
+        i += '[END]'.length;
         continue;
       }
     }
 
     if (text[i] === '\\' && text[i + 1] === 'n') {
-      if (!lastWasNewline) {
+      if (foldedBreaks || !lastWasNewline) {
         tokens.push('\n');
         lastWasNewline = true;
       }
@@ -251,52 +497,97 @@ function parseScript(text) {
 }
 
 function buildWindows(parsed, width, height) {
-  const segments = [];
-  let buffer = '';
-  for (let i = 0; i < parsed.length;) {
-    if (parsed.startsWith('{CLEAR}', i) || parsed.startsWith('{END}', i)) {
-      segments.push(buffer);
-      buffer = '';
-      i += parsed.startsWith('{END}', i) ? 5 : 3;
-      i += parsed.startsWith('{CLEAR}', i) ? 7 : 5;
-    } else buffer += parsed[i++];
-  }
-  if (buffer) segments.push(buffer);
-
   const windows = [];
-  segments.forEach(text => {
-    const lines = [''];
-    let indent = 0;
-    for (let i = 0; i < text.length;) {
-      if (text[i] === '\n') {
-        if (lines.length === 1 && lines[0].length === 0) {
-          // skip the first line break to avoid creating a blank line at the top
-          i++;
-          continue;
-        }
-        lines.push(''.padEnd(indent));
-        i++;
-        continue;
+  let lines = [[]];
+  let indent = 0;
+  let currentColor = 0;
+  let underline = false;
+
+  function flushWindow() {
+    let win = lines.map(line => line.slice());
+    while (win.length < height) win.push([]);
+    win = win.map(line => {
+      while (line.length < width) {
+        line.push({ ch: ' ', color: currentColor, underline });
       }
-      if (text.startsWith('{INTEND}', i)) {
-        indent = lines[lines.length - 1].length;
-        i += 8;
-        continue;
+      return line;
+    });
+    if (win.some(row => row.some(cell => cell.ch.trim() !== ''))) {
+      windows.push(win);
+    }
+    lines = [[]];
+  }
+
+  for (let i = 0; i < parsed.length;) {
+    if (parsed.startsWith('{CLEAR}', i) || parsed.startsWith('{END}', i) || parsed.startsWith('{END_PAGE}', i)) {
+      flushWindow();
+      let skip = 0;
+      if (parsed.startsWith('{CLEAR}', i)) skip = 7;
+      else if (parsed.startsWith('{END}', i)) skip = 5;
+      else if (parsed.startsWith('{END_PAGE}', i)) skip = 10;
+      i += skip;
+      continue;
+    }
+
+    if (parsed.startsWith('{CLUT:', i)) {
+      const match = parsed.slice(i).match(/^\{CLUT:(\d+)\}/);
+      currentColor = +match[1];
+      i += match[0].length;
+      continue;
+    }
+
+    if (parsed.startsWith('{LINE:', i)) {
+      underline = parsed[i + 6] === '1';
+      i += 8;
+      continue;
+    }
+
+    if (parsed.startsWith('{INTEND}', i)) {
+      indent = lines[lines.length - 1].length;
+      i += 8;
+      continue;
+    }
+
+    if (parsed[i] === '\n') {
+      lines.push([]);
+      for (let j = 0; j < indent; j++) {
+        lines[lines.length - 1].push({ ch: ' ', color: currentColor, underline });
       }
-      const ch = text[i++];
-      let line = lines[lines.length - 1];
-      if (line.length >= width) lines.push(''.padEnd(indent) + ch);
-      else lines[lines.length - 1] += ch;
+      i++;
+
+      if (lines.length >= height) {
+        flushWindow();
+      }
+
+      continue;
     }
-    for (let s = 0; s < lines.length; s += height) {
-      let win = lines.slice(s, s + height);
-      while (win.length < height) win.push('');
-      win = win.map(l => l.padEnd(width, ' '));
-      if (win.some(line => line.trim().length > 0)) windows.push(win);
+
+    const ch = parsed[i++];
+    let line = lines[lines.length - 1];
+    if (line.length >= width) {
+      const newLine = [];
+      for (let j = 0; j < indent; j++) {
+        newLine.push({ ch: ' ', color: currentColor, underline });
+      }
+      lines.push(newLine);
+      line = lines[lines.length - 1];
     }
-  });
+
+    line.push({ ch, color: currentColor, underline });
+
+    if (lines.length === height && line.length === width) {
+      flushWindow();
+    }
+  }
+
+  if (lines.some(row => row.some(cell => cell.ch.trim() !== ''))) {
+    flushWindow();
+  }
+
   return windows;
 }
+
+
 
 
 function analyze(raw, parsed, windows, width, height) {
@@ -306,8 +597,9 @@ function analyze(raw, parsed, windows, width, height) {
   return {
     windowCount: windows.length,
     commandsEnd: countCommands(raw, 'END'),
-    commandsClear: countCommands(raw, 'CLEAR'),
     commandsSpace: countCommands(raw, 'SP:'),
+
+    commandsClear: countCommands(raw, 'CLEAR'),
     commandsIndent: countCommands(raw, 'INDENT'),
     commandsWait1: countCommands(raw, 'WAIT_1'),
     commandsWait2: countCommands(raw, 'WAIT_2'),
@@ -315,43 +607,43 @@ function analyze(raw, parsed, windows, width, height) {
     commandsFuncID: countCommands(raw, 'FUNC_ID:'),
     commandsFuncAdr: countCommands(raw, 'FUNC_ADR:'),
     commandsRaw: countCommands(raw, 'RAW:'),
+
+    commandsEndPage: countCommands(raw, 'END_PAGE'),
+    commandsKeyword: countCommands(raw, 'KEYWORD:'),
+    commandsImg: countCommands(raw, 'IMG:'),
+    commandsClut: countCommands(raw, 'CLUT:'),
+    commandsLine: countCommands(raw, 'LINE'),
+
     occupancy, capacity,
     dims: `${width}×${height}`
   };
 }
 
-function renderPreview(textId, outId, width, height, charW, charH, charF) {
+function renderPreview(textId, outId, width, height, foldedBreaks, charW, charH, charF, keywordDict) {
   const raw = document.getElementById(textId).value;
-  const parsed = parseScript(raw);
+  const cleanedRaw = raw.replace(/(?<!\\)\\n|\n/g, match => {
+    if (match === '\n') return '';
+    return match;
+  });
+  const parsed = parseScript(cleanedRaw, keywordDict, foldedBreaks);
   const windows = buildWindows(parsed, width, height);
-  const stats = analyze(raw, parsed, windows, width, height);
+  const stats = analyze(cleanedRaw, parsed, windows, width, height);
 
   const out = document.getElementById(outId);
   out.innerHTML = '';
 
   let sentenceIndex = 1;
-  let lastSentenceIndex = 0;
   let windowSentenceIndexes = [];
-
-  // Calculate how windows relate to sentences
-  // Break raw into segments by [END]
-  const endSplit = raw.split(/\[END\]/g);
-  let segmentWindowsCounts = [];
-
+  
+  const endSplit = cleanedRaw.split(/\[(?:END|END_PAGE)\]/g);
   endSplit.forEach(segment => {
-    const parsedSegment = parseScript(segment);
+    const parsedSegment = parseScript(segment, keywordDict, foldedBreaks);
     const segmentWins = buildWindows(parsedSegment, width, height);
-    segmentWindowsCounts.push(segmentWins.length);
-  });
-
-  // Assign a proposal number to each window
-  let currentWindow = 0;
-  for (let i = 0; i < segmentWindowsCounts.length; i++) {
-    const count = segmentWindowsCounts[i];
-    for (let j = 0; j < count; j++) {
-      windowSentenceIndexes[currentWindow++] = i + 1;
+    for (let i = 0; i < segmentWins.length; i++) {
+      windowSentenceIndexes.push(sentenceIndex);
     }
-  }
+    sentenceIndex++;
+  });
 
   let lastLabel = null;
   windows.forEach((lines, i) => {
@@ -361,7 +653,7 @@ function renderPreview(textId, outId, width, height, charW, charH, charF) {
 
     if (sentenceNum !== lastLabel) {
       const label = document.createElement('div');
-      label.className = "sentence-num"
+      label.className = "sentence-num";
       label.textContent = `Sentence ${sentenceNum}`;
       out.appendChild(label);
       lastLabel = sentenceNum;
@@ -369,15 +661,20 @@ function renderPreview(textId, outId, width, height, charW, charH, charF) {
 
     const frame = document.createElement('div');
     frame.className = 'frame';
-    lines.forEach(r => {
+    lines.forEach(rowData => {
       const row = document.createElement('div');
-      Array.from(r).forEach(ch => {
+      rowData.forEach(cell => {
         const span = document.createElement('span');
         span.className = 'char';
+        span.textContent = cell.ch;
         span.style.width = charW + 'px';
         span.style.height = charH + 'px';
         span.style.fontSize = charF + 'px';
-        span.textContent = ch;
+        span.style.color = colorPalette[cell.color] || '#000';
+        if (cell.underline) {
+          span.style.textDecoration = 'underline';
+          span.style.textUnderlineOffset = '4px';
+        };
         row.appendChild(span);
       });
       frame.appendChild(row);
@@ -390,6 +687,7 @@ function renderPreview(textId, outId, width, height, charW, charH, charF) {
   return stats;
 }
 
+
 function renderStats(statsArr) {
   const container = document.getElementById('statsContainer');
   container.innerHTML = '';
@@ -398,15 +696,22 @@ function renderStats(statsArr) {
 
   const commandKeys = [
     ['commandsEnd', '[END]'],
-    ['commandsClear', '[CLEAR]'],
     ['commandsSpace', '[SP]'],
+
+    ['commandsClear', '[CLEAR]'],
     ['commandsIndent', '[INDENT]'],
     ['commandsWait1', '[WAIT_1]'],
     ['commandsWait2', '[WAIT_2]'],
     ['commandsDelay', '[DELAY]'],
     ['commandsFuncID', '[FUNC_ID]'],
     ['commandsFuncAdr', '[FUNC_ADR]'],
-    ['commandsRaw', '[RAW]']
+    ['commandsRaw', '[RAW]'],
+
+    ['commandsEndPage', '[END_PAGE]'],
+    ['commandsKeyword', '[KEYWORD]'],
+    ['commandsClut', '[CLUT]'],
+    ['commandsLine', '[LINE]'],
+    ['commandsImg', '[IMG]'],
   ];
 
   statsArr.forEach((s, i) => {
@@ -431,20 +736,29 @@ function renderStats(statsArr) {
       }
       return `<span style="color: ${color}">${label}×${count}</span>`;
     }).join(', ');
-    // <div><b>Occupancy:</b> ${s.occupancy}/${s.capacity} (${((s.occupancy / s.capacity) * 100).toFixed(1)}%)</div>
     box.innerHTML = `
 <div><b>Windows:</b> ${s.windowCount}, <b>Sentences</b>: ${s.sentences ? s.sentences : 0}</div>
 <div class="tooltip">
   <b>Commands entries:</b>
   <div class="tooltip-text">
+    General:<br>
     [END] — End of entry<br>
-    [CLEAR] — Clear Window<br>
     [SP:XX] — Consecutive spaces<br>
+    <br>
+    Dialogue:<br>
+    [CLEAR] — Clear Window<br>
     [INDENT] — Sets the indentation from current pos<br>
     [WAIT_1] — Wait for input and continue with a new line<br>
     [WAIT_2] — Wait for input<br>
     [DELAY:XX] — Delay before withdrawal, 60 (~1 second)<br>
-    ... — Do not affect
+    <br>
+    Database / Note:<br>
+    [END_PAGE] — End of page entry<br>
+    [KEYWORD:XX] — Inserts a keyword from the dictionary<br>
+    [CLUT:XX] — Сhanges color for all following characters<br>
+    [LINE] — Switch underline for all following characters<br>
+    <br>
+    ... — are just skipped
   </div>
 </div>
 <div>${commandHTML}</div>
@@ -453,12 +767,6 @@ function renderStats(statsArr) {
     container.appendChild(box);
   });
 }
-
-
-const outputOriginal = document.getElementById('outputOriginal');
-const outputTranslated = document.getElementById('outputTranslated');
-
-let isSyncingScroll = false;
 
 function syncScroll(e) {
   if (!document.getElementById('syncScrollCheck').checked) {
@@ -479,12 +787,9 @@ function syncScroll(e) {
   isSyncingScroll = false;
 }
 
-outputOriginal.addEventListener('scroll', syncScroll);
-outputTranslated.addEventListener('scroll', syncScroll);
-
 function getSentencePositions(text) {
   const positions = [];
-  const regexEnd = /\[END\]/g;
+  const regexEnd = /\[(?:END|END_PAGE)\]/g;
   let lastIndex = 0;
   positions.push(findRealStart(text, 0)); // beginning of the first sentence
 
@@ -527,28 +832,43 @@ function getSentencePositions(text) {
 function scrollToSentence(textarea, pos) {
   const value = textarea.value;
 
-  // Find the beginning of the string (the first \n before the position or 0)
-  let start = value.lastIndexOf('\n', pos - 1);
-  start = start === -1 ? 0 : start + 1;
+  // Найти конец предложения ([END] или [END_PAGE])
+  const endMatch = value.slice(pos).match(/\[(END|END_PAGE)\]/);
+  const end = endMatch ? pos + endMatch.index + endMatch[0].length : value.length;
 
-  // Find the end of the line (the first \n after the position or the end of the text)
-  let end = value.indexOf('\n', pos);
-  end = end === -1 ? value.length : end;
+  // Очистка лишних служебных тегов
+  let start = pos;
+  while (start < end) {
+    if (value[start] === '[') {
+      const cmdMatch = value.slice(start).match(/^\[([A-Z_0-9:]+)\]/);
+      if (cmdMatch) {
+        start += cmdMatch[0].length;
+        continue;
+      }
+    }
+    if (value[start] === '\\' && value[start + 1] === 'n') {
+      start += 2;
+      continue;
+    }
+    if ([' ', '\n', '\r', '\t'].includes(value[start])) {
+      start++;
+      continue;
+    }
+    break;
+  }
 
-  // Let's set the selection of the entire line
+  // Устанавливаем выделение
   textarea.focus();
-  textarea.setSelectionRange(start, end); // (start, start) to move the cursor
+  textarea.setSelectionRange(start, end);
 
-  // Let's scroll the textarea so that the cursor is in the center
-  // Create a temporary hidden div with the same styles to measure the line position
-  const beforeText = value.slice(0, start);
-  const linesBefore = beforeText.split('\n').length - 1;
+  // Скроллим: расчёт scrollTop по пропорции позиции в общем тексте
+  const totalLength = value.length;
+  const scrollRatio = start / totalLength;
+  const scrollTop = scrollRatio * textarea.scrollHeight - textarea.clientHeight / 2;
 
-  const lineHeight = parseFloat(getComputedStyle(textarea).lineHeight) || 20;
-  const scrollTop = linesBefore * lineHeight - textarea.clientHeight / 2;
-
-  textarea.scrollTop = scrollTop;
+  textarea.scrollTop = Math.max(0, scrollTop);
 }
+
 
 
 
@@ -613,8 +933,6 @@ function attachClickHandlers(width, height) {
   });
 }
 
-
-
 function getPresetDimensions(type) {
   const presetId = `presetSize${type}`;
   const widthId = `widthChars${type}`;
@@ -622,41 +940,91 @@ function getPresetDimensions(type) {
   const charWidthId = `charWidth${type}`;
   
   const preset = document.getElementById(presetId).value;
-  let width, height, charWidth;
-  
-  if (preset === 'fixed1') {
+  let width, height, charWidth, foldedBreaks;
+
+  foldedBreaks = false;
+  if (presetId === 'presetSizeOriginal') charWidth = 18;
+  if (presetId === 'presetSizeTranslated') charWidth = 9;
+
+  if (preset === 'dial1') {
+    width = 19;
+    height = 3;
+  } else if (preset === 'dial2') {
+    width = 19;
+    height = 12;
+  } else if (preset === 'dial1fix') {
     width = 33;
     height = 3;
-    charWidth = 9;
-  } else if (preset === 'fixed2') {
+    charWidth = 10;
+  } else if (preset === 'dial2fix') {
     width = 33;
     height = 12;
-    charWidth = 9;
+    charWidth = 10;
+  } else if (preset === 'db') {
+    width = 19;
+    height = 10;
+    foldedBreaks = true;
+  } else if (preset === 'dbfix') {
+    width = 29;
+    height = 10;
+    foldedBreaks = true;
+    charWidth = 11;
+  } else if (preset === 'note') {
+    width = 19;
+    height = 5;
+    foldedBreaks = true;
+  } else if (preset === 'notefix') {
+    width = 29;
+    height = 5;
+    foldedBreaks = true;
+    charWidth = 11;
   } else if (preset !== 'custom') {
     [width, height] = preset.split('x').map(n => +n);
-    charWidth = 18;
   } else {
     width = +document.getElementById(widthId).value;
     height = +document.getElementById(heightId).value;
     charWidth = +document.getElementById(charWidthId).value;
   }
-
+  
   // Update the UI with resolved values
   document.getElementById(widthId).value = width;
   document.getElementById(heightId).value = height;
   document.getElementById(charWidthId).value = charWidth;
 
-  return { width, height, charWidth };
+  return { width, height, charWidth, foldedBreaks };
+}
+
+function attachHoverHandlers() {
+  const outputOriginal = document.getElementById('outputOriginal');
+  const outputTranslated = document.getElementById('outputTranslated');
+
+  function addHoverEvents(container) {
+    container.querySelectorAll('.window').forEach(win => {
+      win.addEventListener('mouseenter', () => {
+        let prev = win.previousElementSibling;
+        while (prev && !prev.classList.contains('sentence-num')) prev = prev.previousElementSibling;
+        if (prev) prev.classList.add('highlight');
+      });
+      win.addEventListener('mouseleave', () => {
+        let prev = win.previousElementSibling;
+        while (prev && !prev.classList.contains('sentence-num')) prev = prev.previousElementSibling;
+        if (prev) prev.classList.remove('highlight');
+      });
+    });
+  }
+
+  addHoverEvents(outputOriginal);
+  addHoverEvents(outputTranslated);
 }
 
 function render() {
-  const { width: wO, height: hO, charWidth: cwO } = getPresetDimensions('Original');
-  const { width: wT, height: hT, charWidth: cwT } = getPresetDimensions('Translated');
+  const { width: wO, height: hO, charWidth: cwO, foldedBreaks: fbO } = getPresetDimensions('Original');
+  const { width: wT, height: hT, charWidth: cwT, foldedBreaks: fbT } = getPresetDimensions('Translated');
   const charH = +document.getElementById('charHeight').value;
   const charF = +document.getElementById('charFont').value;
 
-  const statsIn = renderPreview('inputScript', 'outputOriginal', wO, hO, cwO, charH, charF);
-  const statsTr = renderPreview('translatedScript', 'outputTranslated', wT, hT, cwT, charH, charF);
+  const statsIn = renderPreview('inputScript', 'outputOriginal', wO, hO, fbO, cwO, charH, charF, keywordDictOriginal);
+  const statsTr = renderPreview('translatedScript', 'outputTranslated', wT, hT, fbT, cwT, charH, charF, keywordDictTranslated);
   
   renderStats([statsIn, statsTr]);
 
@@ -725,6 +1093,9 @@ function alignSentenceWindows(width, height, charWidth, charH) {
   });
 }
 
+let isSyncingScroll = false;
+outputOriginal.addEventListener('scroll', syncScroll);
+outputTranslated.addEventListener('scroll', syncScroll);
 
 document.getElementById('renderBtn').addEventListener('click', render);
 
@@ -732,7 +1103,7 @@ document.getElementById('renderBtn').addEventListener('click', render);
 'presetSizeOriginal', 'presetSizeTranslated', 
 'widthCharsOriginal', 'heightLinesOriginal', 'charWidthOriginal', 
 'widthCharsTranslated', 'heightLinesTranslated', 'charWidthTranslated', 
-'charHeight', 'charFont', 'autoAlign', 'autoRender']
+'charHeight', 'charFont', 'autoAlign', 'autoRender', 'keywordDictOriginal', 'keywordDictTranslated']
   .forEach(id => {
     document.getElementById(id).addEventListener('input', () => {
       if (document.getElementById('autoRender').checked) render();
@@ -740,30 +1111,6 @@ document.getElementById('renderBtn').addEventListener('click', render);
   });
 
 render();
-
-function attachHoverHandlers() {
-  const outputOriginal = document.getElementById('outputOriginal');
-  const outputTranslated = document.getElementById('outputTranslated');
-
-  function addHoverEvents(container) {
-    container.querySelectorAll('.window').forEach(win => {
-      win.addEventListener('mouseenter', () => {
-        let prev = win.previousElementSibling;
-        while (prev && !prev.classList.contains('sentence-num')) prev = prev.previousElementSibling;
-        if (prev) prev.classList.add('highlight');
-      });
-      win.addEventListener('mouseleave', () => {
-        let prev = win.previousElementSibling;
-        while (prev && !prev.classList.contains('sentence-num')) prev = prev.previousElementSibling;
-        if (prev) prev.classList.remove('highlight');
-      });
-    });
-  }
-
-  addHoverEvents(outputOriginal);
-  addHoverEvents(outputTranslated);
-}
-
 
 divider.addEventListener('mousedown', e => {
   isDragging = true;
