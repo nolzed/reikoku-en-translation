@@ -10,7 +10,7 @@ from unpack_spirit import find_signature
 
 #from parse_script import export_to_excel_escape#, parse_script_text
 
-
+keywords = {}
     
 # Script parsers
 def parse_database_text(text_bytes, font_map: FontMapper, end_break=False):
@@ -82,6 +82,11 @@ def parse_database_text(text_bytes, font_map: FontMapper, end_break=False):
                 output.append(f"[IMG:{img_params.decode('utf-8')}]")
             elif subcmd == 0x14:
                 keyw_params = read_bracket_content()
+                content = keyw_params.decode('utf-8').strip('()')
+                parts = content.split(',')
+                if len(parts) == 3:
+                    x, y, z = parts
+                    keywords[int(x.strip())] = int(z.strip())
                 output.append(f"[KEYWORD:{keyw_params.decode('utf-8')}]")
             elif subcmd == 0x19:
                 output.append("[END_PAGE]")
@@ -232,7 +237,7 @@ def parse_topics_table(data, offset, next_block_offset, font_map):
         #    print(entry_data, title, parse_database_text(entry_data[:4], font_map), parse_database_text(title, font_map))
             
         table_entries.append({       
-            "sorted_index": sorted_index,         
+            "sorted_index": sorted_index+1,         
             "search_key" : parse_database_text(entry_data[:4], font_map),
             "title" : parse_database_text(title, font_map),
             "pages" : parse_database_text(entry_data[4 + len(title):], font_map, True)
@@ -241,7 +246,7 @@ def parse_topics_table(data, offset, next_block_offset, font_map):
     return {
         "offsets": table_offsets,
         "entries": table_entries,
-        "raw_entries": raw_table_entries
+        #"raw_entries": raw_table_entries
     }
 
 def parse_keyword_table(data, offset, next_block_offset, font_map):
@@ -264,20 +269,20 @@ def parse_keyword_table(data, offset, next_block_offset, font_map):
             size = block_size - (entry_offset - offset)
         entry_data = data[entry_offset:entry_offset + size]
         raw_table_entries.append(entry_data.hex())
-        index = i+1
-        if index > 82:
-            index = 82 - (index - 82)
+        definition_id = keywords.get(i, "")
+        keyword_type = "keyword" if definition_id else "definition"
         table_entries.append({
-            "idx" : index,
+            "id" : i,
+            "type" : keyword_type,
+            "definition_id" : definition_id,
             "search_key" : parse_database_text(entry_data[:4], font_map),
-            #"search_key_raw" : entry_data[:4].hex(),
             "text" : parse_database_text(entry_data[4:], font_map)
         })
 
     return {
         "offsets": table_offsets,
         "entries": table_entries,
-        "raw_entries": raw_table_entries
+        #"raw_entries": raw_table_entries
     }
 
 def parse_search_table(data, offset, next_block_offset, font_map):
@@ -312,7 +317,7 @@ def parse_search_table(data, offset, next_block_offset, font_map):
     return {
         "offsets": table_offsets,
         "entries": table_entries,
-        "raw_entries": raw_table_entries
+        #"raw_entries": raw_table_entries
     }
 
 def parse_database(data, font_map):
@@ -412,6 +417,8 @@ def export_to_excel_escape(data, filename, default_row_height=15):
     wb.save(filename)
 
 def main():
+    global keywords
+
     parser = argparse.ArgumentParser(description="Parse database file")
     parser.add_argument("file", help="Input .database file")
     parser.add_argument("--json_out", help="Path to save parsed data (.json)")
@@ -443,6 +450,7 @@ def main():
 
     export_to_excel_escape(parsed_data, args.excel_out)
     print("[+] Excel saved to:", args.excel_out)
+
 
 if __name__ == '__main__':
     main()

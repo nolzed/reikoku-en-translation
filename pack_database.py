@@ -242,6 +242,17 @@ def import_from_excel_unescape(filename):
 
     return entries
 
+def generate_keyword_table(data):
+    keywords = {}
+    for entry in data["keywords_table"]["entries"]:
+        if entry['definition_id']:
+            X = entry['id']
+            Z = entry['definition_id']
+            
+            key = f"({X},0,{Z})"
+            keywords[key] = entry['text'].replace("[END]", "")
+    return keywords
+
 def main():
     parser = argparse.ArgumentParser(description="Pack JSON script into game format")
     parser.add_argument("input_json", help="Input JSON file with script structure (dialog/scenario)")
@@ -267,6 +278,10 @@ def main():
         f.write(bin_data)
 
     print(f"[+] Script file written to: {args.out_file}")
+
+    with open("./database/keywords_table.json", 'w', encoding='utf-8') as out:
+        json.dump(generate_keyword_table(data), out, indent=2, ensure_ascii=False)
+    print("[+] JSON Keywords Table saved to:", "./database/keywords_table.json")
 
 
 if __name__ == '__main__':

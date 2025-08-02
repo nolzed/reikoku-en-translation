@@ -406,6 +406,24 @@ function parseScript(text, keywordDict, foldedBreaks = false) {
         continue;
       }
 	  
+	  if (/^\[DELAY:[^\]]+\]/.test(slice)) {
+        const match = slice.match(/^\[DELAY:[^\]]+\]/);
+        i += match[0].length;
+        continue;
+      }
+	  
+	  if (/^\[FUNC_ID:[^\]]+\]/.test(slice)) {
+        const match = slice.match(/^\[FUNC_ID:[^\]]+\]/);
+        i += match[0].length;
+        continue;
+      }
+	  
+	  if (/^\[FUNC_ADR:[^\]]+\]/.test(slice)) {
+        const match = slice.match(/^\[FUNC_ADR:[^\]]+\]/);
+        i += match[0].length;
+        continue;
+      }
+	  
       if (/^\[CLUT:(\d+)\]/.test(slice)) {
         const match = slice.match(/^\[CLUT:(\d+)\]/);
         currentColor = +match[1];
@@ -456,8 +474,8 @@ function parseScript(text, keywordDict, foldedBreaks = false) {
         continue;
       }
 
-      if (/^\[(FUNC_ID|FUNC_ADR|DELAY|WAIT_2)\]/.test(slice)) {
-        i += slice.match(/^\[(FUNC_ID|FUNC_ADR|DELAY|WAIT_2)\]/)[0].length;
+      if (/^\[(DELAY|WAIT_2|)\]/.test(slice)) {
+        i += slice.match(/^\[(DELAY|WAIT_2)\]/)[0].length;
         continue;
       }
 
@@ -467,9 +485,9 @@ function parseScript(text, keywordDict, foldedBreaks = false) {
         continue;
       }
 
-      if (/^\[INTEND\]/.test(slice)) {
-        tokens.push('{INTEND}');
-        i += '[INTEND]'.length;
+      if (/^\[INDENT\]/.test(slice)) {
+        tokens.push('{INDENT}');
+        i += '[INDENT]'.length;
         continue;
       }
 
@@ -504,19 +522,39 @@ function buildWindows(parsed, width, height) {
   let underline = false;
 
   function flushWindow() {
-    let win = lines.map(line => line.slice());
-    while (win.length < height) win.push([]);
-    win = win.map(line => {
-      while (line.length < width) {
-        line.push({ ch: ' ', color: currentColor, underline });
-      }
-      return line;
-    });
-    if (win.some(row => row.some(cell => cell.ch.trim() !== ''))) {
-      windows.push(win);
-    }
-    lines = [[]];
+  // 1) скопировать накопленные строки
+  let win = lines.map(line => line.slice());
+
+  // 2) убрать ВСЕ trailing-пустые строки
+  while (
+    win.length > 0 &&
+    win[win.length - 1].every(cell => cell.ch.trim() === '')
+  ) {
+    win.pop();
   }
+
+  // 3) «жёстко» дополнить до заданной высоты
+  while (win.length < height) {
+    win.push([]);  // добавляем полностью пустую строку
+  }
+
+  // 4) затем в каждую строку заполняем пробелами до ширины
+  win = win.map(line => {
+    while (line.length < width) {
+      line.push({ ch: ' ', color: currentColor, underline });
+    }
+    return line;
+  });
+
+  // 5) сохранить окно, если в нём есть хоть один непустой символ
+  if (win.some(row => row.some(cell => cell.ch.trim() !== ''))) {
+    windows.push(win);
+  }
+
+  // 6) начать новый буфер строк
+  lines = [[]];
+}
+
 
   for (let i = 0; i < parsed.length;) {
     if (parsed.startsWith('{CLEAR}', i) || parsed.startsWith('{END}', i) || parsed.startsWith('{END_PAGE}', i)) {
@@ -542,25 +580,36 @@ function buildWindows(parsed, width, height) {
       continue;
     }
 
-    if (parsed.startsWith('{INTEND}', i)) {
+    if (parsed.startsWith('{INDENT}', i)) {
       indent = lines[lines.length - 1].length;
       i += 8;
       continue;
     }
 
     if (parsed[i] === '\n') {
-      lines.push([]);
-      for (let j = 0; j < indent; j++) {
-        lines[lines.length - 1].push({ ch: ' ', color: currentColor, underline });
-      }
-      i++;
+  // если текущая строка пуста — пропускаем символ перевода строки
+  const currentLine = lines[lines.length - 1];
+  if (currentLine.length === 0) {
+    i++; // просто пропускаем \n
+    continue;
+  }
 
-      if (lines.length >= height) {
-        flushWindow();
-      }
+  // иначе — нормальная логика переноса строки
+  i++;
+  lines.push([]);
 
-      continue;
+  // проверка на переполнение окна
+  if (lines.length >= height + 1) {
+    flushWindow();
+  } else {
+    // добавляем отступ, только если НЕ начали новое окно
+    for (let j = 0; j < indent; j++) {
+      lines[lines.length - 1].push({ ch: ' ', color: currentColor, underline });
     }
+  }
+
+  continue;
+}
 
     const ch = parsed[i++];
     let line = lines[lines.length - 1];
